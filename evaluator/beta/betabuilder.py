@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from evaluate.evaluation import Evaluation, AiEvaluation
+from evaluator.beta.betaevaluation import BetaEvaluation, AiEvaluation
 
 """
 builder 负责对批改结果进行建造
@@ -10,28 +10,28 @@ to_pretty_json: 根据Evaluation对象构造带有缩进的json字符串
 """
 
 
-class EvaluationBuilder:
+class BetaEvaluationBuilder:
     """
     建造者模式实现复杂Evaluation对象的构造
     """
 
     @staticmethod
-    def build(data: dict) -> Evaluation:
+    def build(data: dict) -> BetaEvaluation:
         """主构建入口"""
-        evaluation = Evaluation()
-        EvaluationBuilder._build_basic_info(data, evaluation)
-        EvaluationBuilder._build_essay_info(data, evaluation)
-        EvaluationBuilder._build_ai_evaluation(data, evaluation)
+        evaluation = BetaEvaluation()
+        BetaEvaluationBuilder._build_basic_info(data, evaluation)
+        BetaEvaluationBuilder._build_essay_info(data, evaluation)
+        BetaEvaluationBuilder._build_ai_evaluation(data, evaluation)
         return evaluation
 
     @staticmethod
-    def _build_basic_info(data: dict, target: Evaluation):
+    def _build_basic_info(data: dict, target: BetaEvaluation):
         """构建基础信息"""
         target.title = data.get("title", "")
         target.text = data.get("text", [])
 
     @staticmethod
-    def _build_essay_info(data: dict, target: Evaluation):
+    def _build_essay_info(data: dict, target: BetaEvaluation):
         """构建作文信息"""
         essay_info = data.get("essayInfo", {})
         target.essayInfo.essayType = essay_info.get("essayType", "")
@@ -44,23 +44,23 @@ class EvaluationBuilder:
                 setattr(target.essayInfo.counting, key, value)
 
     @staticmethod
-    def _build_ai_evaluation(data: dict, target: Evaluation):
+    def _build_ai_evaluation(data: dict, target: BetaEvaluation):
         """构建AI评价部分"""
         ai_eval_data = data.get("aiEvaluation", {})
         ai_eval = target.aiEvaluation
 
         # 构建各子模块
-        EvaluationBuilder._build_model_version(ai_eval_data.get("modelVersion", {}), ai_eval.modelVersion)
-        EvaluationBuilder._build_overall_eval(ai_eval_data.get("overallEvaluation", {}), ai_eval.overallEvaluation)
-        EvaluationBuilder._build_fluency_eval(ai_eval_data.get("fluencyEvaluation", {}), ai_eval.fluencyEvaluation)
-        EvaluationBuilder._build_word_sentence_eval(ai_eval_data.get("wordSentenceEvaluation", {}),
-                                                    ai_eval.wordSentenceEvaluation)
-        EvaluationBuilder._build_expression_eval(ai_eval_data.get("expressionEvaluation", {}),
-                                                 ai_eval.expressionEvaluation)
-        EvaluationBuilder._build_suggestion_eval(ai_eval_data.get("suggestionEvaluation", {}),
-                                                 ai_eval.suggestionEvaluation)
-        EvaluationBuilder._build_paragraph_evals(ai_eval_data.get("paragraphEvaluations", []),
-                                                 ai_eval.paragraphEvaluations)
+        BetaEvaluationBuilder._build_model_version(ai_eval_data.get("modelVersion", {}), ai_eval.modelVersion)
+        BetaEvaluationBuilder._build_overall_eval(ai_eval_data.get("overallEvaluation", {}), ai_eval.overallEvaluation)
+        BetaEvaluationBuilder._build_fluency_eval(ai_eval_data.get("fluencyEvaluation", {}), ai_eval.fluencyEvaluation)
+        BetaEvaluationBuilder._build_word_sentence_eval(ai_eval_data.get("wordSentenceEvaluation", {}),
+                                                        ai_eval.wordSentenceEvaluation)
+        BetaEvaluationBuilder._build_expression_eval(ai_eval_data.get("expressionEvaluation", {}),
+                                                     ai_eval.expressionEvaluation)
+        BetaEvaluationBuilder._build_suggestion_eval(ai_eval_data.get("suggestionEvaluation", {}),
+                                                     ai_eval.suggestionEvaluation)
+        BetaEvaluationBuilder._build_paragraph_evals(ai_eval_data.get("paragraphEvaluations", []),
+                                                     ai_eval.paragraphEvaluations)
 
     @staticmethod
     def _build_model_version(data: dict, target: AiEvaluation.ModelVersion):
@@ -89,7 +89,7 @@ class EvaluationBuilder:
             # 处理句子维度
             for sent_data in para_data:
                 sentence_eval = AiEvaluation.WordSentenceEvaluation.SentenceEvaluation()
-                EvaluationBuilder._build_sentence_eval(sent_data, sentence_eval)
+                BetaEvaluationBuilder._build_sentence_eval(sent_data, sentence_eval)
                 para_evaluations.append(sentence_eval)
             target.sentenceEvaluations.append(para_evaluations)
 
@@ -130,7 +130,7 @@ class EvaluationBuilder:
             target.append(para_eval)
 
     @staticmethod
-    def to_pretty_json(evaluation: 'Evaluation', indent: int = 2) -> str:
+    def to_pretty_json(evaluation: 'BetaEvaluation', indent: int = 2) -> str:
         """
         将Evaluation对象转换为美观的JSON字符串
 
@@ -184,10 +184,10 @@ class EvaluationBuilder:
 # single-test
 if __name__ == '__main__':
     # 读取原始数据
-    with open('../asset/example.json', encoding='utf-8') as f:
+    with open('../../asset/example.json', encoding='utf-8') as f:
         raw_data = json.load(f)
     # 使用建造者构建对象
-    eva = EvaluationBuilder.build(raw_data)
+    eva = BetaEvaluationBuilder.build(raw_data)
     # 验证构建结果
     print(eva)
-    print(EvaluationBuilder.to_pretty_json(eva))
+    print(BetaEvaluationBuilder.to_pretty_json(eva))

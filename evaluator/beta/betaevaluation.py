@@ -6,7 +6,7 @@ evaluation
 """
 
 
-class Evaluation:
+class BetaEvaluation:
     """
     总的批改结果类
     """

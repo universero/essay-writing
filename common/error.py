@@ -1,6 +1,6 @@
 from requests import Response
 
-from error_code import ErrorCode
+from common.error_code import ErrorCode
 
 
 class BizException(Exception, Response):
