@@ -16,6 +16,7 @@ from common.consts import ZH_NO
 from evaluator.micro_builder import MicroEvaluationBuilder
 from evaluator.micro_evalu import MicroEvaluation
 
+# 比例系数, 用于提高画质, 画质越高耗时越长
 coefficient = 5
 
 # 页面
@@ -27,7 +28,7 @@ GRID_HEIGHT = 34 * coefficient  # 每个格子的高度
 GRID_WIDTH = 30 * coefficient  # 每个格子的宽度（px）
 GRID_PER_ROW = 17  # 每行格子数
 GRID_MARGIN_TOP = 24 * coefficient  # 上边距
-GRID_MARGIN_LEFT = 24 * coefficient  # 左边距
+MARGIN_LEFT = 24 * coefficient  # 左边距
 GRID_TEXT_SIZE = 17 * coefficient
 GRID_LINE = 3
 
@@ -49,16 +50,19 @@ MID_BAR_LINE = 5
 # 侧边评价
 SIDE_BAR_HEIGHT = 946 * coefficient
 SIDE_BAR_WIDTH = 140 * coefficient
-SIDE_BAR_MARGIN_LEFT = 11 * coefficient  # 侧边评价与作文主体间的间距
+SIDE_BAR_MARGIN_LEFT = 3 * coefficient  # 侧边评价与侧边栏左侧的间距
 SIDE_BAR_MARGIN_RIGHT = 11 * coefficient  # 和右侧的区别
 SIDE_BAR_MARGIN_TOP = 24 * coefficient  # 与顶部距离
-SIDE_BAR_TEXT_HEIGHT = 13 * coefficient  # 侧边评价字高
-SIDE_BAR_TEXT_WIDTH = 13 * coefficient  # 侧边评价字宽
+SIDE_BAR_TEXT_SIZE = 13 * coefficient  # 侧边评价字高
+SIDE_BAR_TEXT_GAP = 5 * coefficient  # 侧边栏中字间距
+SIDE_BAR_ITEM_GAP = 12 * coefficient  # 侧边栏中两项的间距
+SIDE_BAR_ITEM_SIZE = 12 * coefficient
+SIDE_BAR_PER_ROW = int((SIDE_BAR_WIDTH - SIDE_BAR_MARGIN_LEFT) // (SIDE_BAR_TEXT_SIZE * 1.1))
 SIDE_BAR_LINE = 5
 SIDE_BAR_COLOR = "#F19E3E"
 
 # 段落编号
-NO_MARGIN_LEFT = GRID_WIDTH * 0.2 + GRID_MARGIN_LEFT  # 段落编号距离页左侧距离
+NO_MARGIN_LEFT = GRID_WIDTH * 0.2 + MARGIN_LEFT  # 段落编号距离页左侧距离
 NO_MARGIN_TOP = GRID_HEIGHT * 0.2  # 段落编号距离所在方格的上侧距离
 NO_HEIGHT = GRID_HEIGHT * 0.6
 NO_WIDTH = GRID_WIDTH * 0.8
@@ -84,12 +88,20 @@ SEQ_RADIUS = 5 * coefficient
 SEQ_COLOR = (101, 130, 255)
 SEQ_TEXT_SIZE = 7 * coefficient
 
+# 全文评价
+ALL_MARGIN_TOP = 10 * coefficient
+ALL_MARGIN_LEFT = 0.6 * GRID_WIDTH
+ALL_MARGIN_RIGHT = 0.6 * GRID_WIDTH
+ALL_ICON = Image.open("../asset/arrow.png")
+
 # 字体配置
 EVAL_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=17 * coefficient)
 TEXT_FONT = ImageFont.truetype(os.path.abspath('../asset/ToneOZ-Tsuipita-TC（仅汉字）.ttf'), size=GRID_TEXT_SIZE)
 NO_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=NO_TEXT_SIZE)
 MID_BAR_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=MID_BAR_TEXT_SIZE)
 SEQ_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=SEQ_TEXT_SIZE)
+SIDE_BAR_ITEM_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=SIDE_BAR_ITEM_SIZE)
+SIDE_BAR_TEXT_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=SIDE_BAR_TEXT_SIZE)
 
 
 class Render:
@@ -123,7 +135,7 @@ class Render:
         self.advance_words()
         self.rhetoric()
         self.sidebar()
-        self.img.show()
+        self.essay_comment()
 
     def deal_title(self):
         """将标题合并到第一段中以简化处理"""
@@ -167,8 +179,8 @@ class Render:
         while row < para.text_end:
             # 每行一个一个地绘制
             for i in range(GRID_PER_ROW):
-                draw.rectangle([(GRID_WIDTH * i + GRID_MARGIN_LEFT, row),
-                                (GRID_WIDTH * (i + 1) + GRID_MARGIN_LEFT, row + GRID_HEIGHT)],
+                draw.rectangle([(GRID_WIDTH * i + MARGIN_LEFT, row),
+                                (GRID_WIDTH * (i + 1) + MARGIN_LEFT, row + GRID_HEIGHT)],
                                outline="black", width=GRID_LINE)
                 content = " "
                 if number != 0 and len(text) > idx - 2 >= 0:
@@ -177,34 +189,34 @@ class Render:
                     content = text[idx]
                 elif number == 0 and GRID_PER_ROW <= idx - 2 < len(text):  # 第一段非标题行
                     content = text[idx - 2]
-                draw.text((GRID_WIDTH * i + GRID_MARGIN_LEFT + GRID_WIDTH // 2, row + GRID_HEIGHT - GRID_HEIGHT // 2),
+                draw.text((GRID_WIDTH * i + MARGIN_LEFT + GRID_WIDTH // 2, row + GRID_HEIGHT - GRID_HEIGHT // 2),
                           content, font=TEXT_FONT, fill="black", anchor="mm")
                 idx += 1
             # 绘制两行间隔
-            draw.rectangle([(GRID_MARGIN_LEFT, row + GRID_HEIGHT,),
-                            (GRID_MARGIN_LEFT + GAP_BAR_WIDTH, row + GRID_HEIGHT + GAP_BAR_HEIGHT)],
+            draw.rectangle([(MARGIN_LEFT, row + GRID_HEIGHT,),
+                            (MARGIN_LEFT + GAP_BAR_WIDTH, row + GRID_HEIGHT + GAP_BAR_HEIGHT)],
                            outline="black", width=GAP_LINE)
             row += GRID_HEIGHT + GAP_BAR_HEIGHT
         # 将每段的外圈加粗以保证视觉效果
         # 上
-        draw.line([(GRID_MARGIN_LEFT, para.text_start - GRID_LINE // 2),
-                   (GRID_MARGIN_LEFT + GAP_BAR_WIDTH, para.text_start - GRID_LINE // 2)],
+        draw.line([(MARGIN_LEFT, para.text_start - GRID_LINE // 2),
+                   (MARGIN_LEFT + GAP_BAR_WIDTH, para.text_start - GRID_LINE // 2)],
                   fill="black", width=GRID_LINE)
         # 下
-        draw.line([(GRID_MARGIN_LEFT, para.text_end + GAP_LINE // 2),
-                   (GRID_MARGIN_LEFT + GAP_BAR_WIDTH, row + GAP_LINE // 2)],
+        draw.line([(MARGIN_LEFT, para.text_end + GAP_LINE // 2),
+                   (MARGIN_LEFT + GAP_BAR_WIDTH, row + GAP_LINE // 2)],
                   fill="black", width=GAP_LINE)
         # 左
-        draw.line([(GRID_MARGIN_LEFT - GRID_LINE // 2, para.text_start),
-                   (GRID_MARGIN_LEFT - GRID_LINE // 2, para.text_end)],
+        draw.line([(MARGIN_LEFT - GRID_LINE // 2, para.text_start),
+                   (MARGIN_LEFT - GRID_LINE // 2, para.text_end)],
                   fill="black", width=GAP_LINE)
         # 右
-        draw.line([(GRID_MARGIN_LEFT + GAP_BAR_WIDTH + GRID_LINE // 2, para.text_start),
-                   (GRID_MARGIN_LEFT + GAP_BAR_WIDTH + GRID_LINE // 2, para.text_end)],
+        draw.line([(MARGIN_LEFT + GAP_BAR_WIDTH + GRID_LINE // 2, para.text_start),
+                   (MARGIN_LEFT + GAP_BAR_WIDTH + GRID_LINE // 2, para.text_end)],
                   fill="black", width=GAP_LINE)
         # 段落点评位置
-        draw.rounded_rectangle([(GRID_MARGIN_LEFT, para.bar_start),
-                                (GRID_MARGIN_LEFT + MID_BAR_WIDTH, para.bar_end)],
+        draw.rounded_rectangle([(MARGIN_LEFT, para.bar_start),
+                                (MARGIN_LEFT + MID_BAR_WIDTH, para.bar_end)],
                                radius=40,
                                outline="black", width=MID_BAR_LINE)
 
@@ -233,7 +245,7 @@ class Render:
         for i in range(len(self.paras)):
             # 段评提示
             no = "第" + ZH_NO[i + 1] + "段段评:"
-            left = GRID_MARGIN_LEFT + MID_BAR_MARGIN_LEFT
+            left = MARGIN_LEFT + MID_BAR_MARGIN_LEFT
             upper = self.paras[i].bar_start + MID_BAR_MARGIN_TOP
             draw.text((left, upper), no, font=MID_BAR_FONT, fill=NO_COLOR, anchor="la")
             text = util.html_strip(self.evalu.comments.paragraph_comments[i])
@@ -256,13 +268,7 @@ class Render:
                 SideBar(para_no, start_row, start_col, "病句", sick_sentence.type, sick_sentence.revised, SICK_COLOR))
             now_row = start_row
             while now_row <= end_row:
-                left, right = GRID_MARGIN_LEFT, GRID_MARGIN_LEFT + GAP_BAR_WIDTH
-                if now_row == end_row:
-                    right = GRID_MARGIN_LEFT + GRID_WIDTH * (end_col + 1)
-                if now_row == start_row:
-                    left = GRID_MARGIN_LEFT + GRID_WIDTH * start_col
-                row = (self.paras[para_no].text_start + (now_row + 1) *
-                       (GRID_HEIGHT + GAP_BAR_HEIGHT) - GAP_BAR_HEIGHT // 2)
+                left, right, row = self.get_line_pos(para_no, now_row, start_row, start_col, end_row, end_col)
                 draw.line([(left, row), (right, row)], fill=SICK_COLOR, width=SICK_LINE)
                 now_row += 1
 
@@ -274,7 +280,7 @@ class Render:
         for typo in self.evalu.grammar.typo:
             para_no, start_row, start_col, end_row, end_col = self.global_to_paragraph(typo.start_pos, typo.end_pos)
             self.todo_sidebar.append(
-                SideBar(para_no, start_row, start_col, typo.type, "", f"{typo.ori}改为{typo.revised}", SICK_COLOR))
+                SideBar(para_no, start_row, start_col, typo.type, "", f"{typo.ori}应改为{typo.revised}", SICK_COLOR))
             self.draw_mask(draw, para_no, start_row, start_col, end_row, end_col, TYPO_MASK_COLOR)
         self.img = Image.alpha_composite(self.img, mask)
 
@@ -285,7 +291,7 @@ class Render:
         for words in self.evalu.highlights.advance_words:
             para_no, start_row, start_col, end_row, end_col = self.global_to_paragraph(words.start_pos, words.end_pos)
             self.todo_sidebar.append(
-                SideBar(para_no, start_row, start_col, f"好词:{words.type}", words.memo["text"], "",
+                SideBar(para_no, start_row, start_col, f"好词：{words.type}", words.memo["text"], "",
                         HIGHLIGHT_LINE_COLOR))
             self.draw_mask(draw, para_no, start_row, start_col, end_row, end_col, HIGHLIGHT_MASK_COLOR)
         self.img = Image.alpha_composite(self.img, mask)
@@ -297,29 +303,37 @@ class Render:
             # 全文索引转换为段落索引
             para_no, start_row, start_col, end_row, end_col = self.global_to_paragraph(rhetoric.start_pos,
                                                                                        rhetoric.end_pos)
+            t = rhetoric.type
+            if len(rhetoric.types) > 0:
+                t = "，" if t != "" else ""
+                t += "，".join(rhetoric.types)
             self.todo_sidebar.append(
-                SideBar(para_no, start_row, start_col, "好句", rhetoric.type, "", HIGHLIGHT_LINE_COLOR))
+                SideBar(para_no, start_row, start_col, "好句", t, "", HIGHLIGHT_LINE_COLOR))
             now_row = start_row
             while now_row <= end_row:
-                left, right = GRID_MARGIN_LEFT, GRID_MARGIN_LEFT + GAP_BAR_WIDTH
-                if now_row == end_row:
-                    right = GRID_MARGIN_LEFT + GRID_WIDTH * (end_col + 1)
-                if now_row == start_row:
-                    left = GRID_MARGIN_LEFT + GRID_WIDTH * start_col
-                row = (self.paras[para_no].text_start + (now_row + 1) *
-                       (GRID_HEIGHT + GAP_BAR_HEIGHT) - GAP_BAR_HEIGHT // 2)
+                left, right, row = self.get_line_pos(para_no, now_row, start_row, start_col, end_row, end_col)
                 util.draw_wavy_line(draw, (left, row), (right, row), HIGHLIGHT_AMPLITUDE, HIGHLIGHT_WAVELENGTH,
                                     HIGHLIGHT_LINE_COLOR, HIGHLIGHT_LINE)
                 now_row += 1
 
+    def get_line_pos(self, para_no, now_row, start_row, start_col, end_row, end_col):
+        left, right = MARGIN_LEFT, MARGIN_LEFT + GAP_BAR_WIDTH
+        if now_row == end_row:
+            right = MARGIN_LEFT + GRID_WIDTH * (end_col + 1)
+        if now_row == start_row:
+            left = MARGIN_LEFT + GRID_WIDTH * start_col
+        row = (self.paras[para_no].text_start + (now_row + 1) *
+               (GRID_HEIGHT + GAP_BAR_HEIGHT) - GAP_BAR_HEIGHT // 2)
+        return left, right, row
+
     def draw_mask(self, draw, para_no, start_row, start_col, end_row, end_col, color):
         now_row = start_row
         while now_row <= end_row:
-            left, right = GRID_MARGIN_LEFT, GRID_MARGIN_LEFT + GAP_BAR_WIDTH
+            left, right = MARGIN_LEFT, MARGIN_LEFT + GAP_BAR_WIDTH
             if now_row == end_row:
-                right = GRID_MARGIN_LEFT + GRID_WIDTH * (end_col + 1)
+                right = MARGIN_LEFT + GRID_WIDTH * (end_col + 1)
             if now_row == start_row:
-                left = GRID_MARGIN_LEFT + GRID_WIDTH * start_col
+                left = MARGIN_LEFT + GRID_WIDTH * start_col
             upper = self.paras[para_no].text_start + now_row * (GRID_HEIGHT + GAP_BAR_HEIGHT)
             down = upper + GRID_HEIGHT
             draw.rectangle([(left + GRID_LINE, upper + GRID_LINE), (right - GRID_LINE, down - GRID_LINE)],
@@ -337,16 +351,37 @@ class Render:
                         (right, down)],
                        outline="black", width=SIDE_BAR_LINE)
         self.todo_sidebar = sort_sidebar(self.todo_sidebar)
+        last, left = SIDE_BAR_MARGIN_TOP, PAGE_WIDTH - SIDE_BAR_WIDTH - SIDE_BAR_MARGIN_RIGHT + SIDE_BAR_MARGIN_LEFT
         for i in range(len(self.todo_sidebar)):
             sidebar = self.todo_sidebar[i]
             self.seq(i, sidebar.para, sidebar.row, sidebar.col, sidebar.color)
+            para, row = self.paras[sidebar.para], sidebar.row
+            upper = para.text_start + row * (GRID_HEIGHT + GAP_BAR_HEIGHT)
+            if upper < last:
+                upper = last + SIDE_BAR_ITEM_GAP
+            # 写入序号和类型
+            draw.text((left, upper), f"{str(i + 1)}.{sidebar.kind}", font=SIDE_BAR_ITEM_FONT, fill=sidebar.color,
+                      anchor="la")
+            # 写入tag
+            if sidebar.tag != "":
+                upper += SIDE_BAR_TEXT_GAP + SIDE_BAR_ITEM_SIZE
+                draw.text((left, upper), sidebar.tag, font=SIDE_BAR_ITEM_FONT, fill=sidebar.color, anchor="la")
+            # 分行写入content
+            text = sidebar.content
+            rows = (len(text) - 1) // SIDE_BAR_PER_ROW + 1
+            for j in range(int(rows)):
+                end = (j + 1) * SIDE_BAR_PER_ROW
+                row_text = text[j * SIDE_BAR_PER_ROW:end if end < len(text) else len(text)]
+                draw.text((left, upper + (SIDE_BAR_TEXT_SIZE + SIDE_BAR_TEXT_GAP) * (j + 1)),
+                          row_text, font=SIDE_BAR_TEXT_FONT, fill="black", anchor="la")
+            last = upper + (SIDE_BAR_TEXT_SIZE + SIDE_BAR_TEXT_GAP) * rows + SIDE_BAR_ITEM_GAP
 
     def seq(self, number, para_no, row, col, color):
         """绘制序号标记"""
         draw = ImageDraw.Draw(self.img)
         para = self.paras[para_no]
         x, y = para.text_start + row * (
-                GRID_HEIGHT + GAP_BAR_HEIGHT) + GRID_WIDTH // 10, GRID_MARGIN_LEFT + GRID_WIDTH * col
+                GRID_HEIGHT + GAP_BAR_HEIGHT) + GRID_WIDTH // 10, MARGIN_LEFT + GRID_WIDTH * col
         draw.circle((y, x), SEQ_RADIUS, fill=color, outline=color)
         draw.text((y, x), str(number + 1), fill="white", font=SEQ_FONT, anchor="mm")
 
@@ -423,15 +458,23 @@ def sort_sidebar(sidebars: list[SideBar]) -> list[SideBar]:
         if len(group_list) == 1:
             merged_sidebars.append(group_list[0])
         else:
-            # 合并第一个元素，其他属性拼接
+            # 合并第一个元素，其他属性拼接（去重）
             first = group_list[0]
+
+            # 合并 kind，去重
+            merged_kind = "，".join(set(sb.kind for sb in group_list))
+            # 合并 tag，去重
+            merged_tag = "，".join(set(sb.tag for sb in group_list))
+            # 合并 content（不去重）
+            merged_content = " ".join(sb.content for sb in group_list)
+
             merged = SideBar(
                 para=first.para,
                 row=first.row,
                 col=first.col,
-                kind=" ".join(sb.kind for sb in group_list),
-                tag=" ".join(sb.tag for sb in group_list),
-                content=" ".join(sb.content for sb in group_list),
+                kind=merged_kind,
+                tag=merged_tag,
+                content=merged_content,
                 color=first.color,
             )
             merged_sidebars.append(merged)
@@ -448,3 +491,4 @@ if __name__ == '__main__':
                "今天的阳光明媚，小鸟在树间欢快地歌唱，校园里一片生机勃勃。午休时，我们班的同学们聚集在操场上，准备进行一场有趣的投篮游戏。\n我们首先分成了两队，一队是蓝队，另一队是红队。蓝队的队员有我、小明和小华，红队则由小丽、小杰和小雨组成。比赛规则很简单，每人轮流投篮，看哪队投进去的篮球最多，最后得分高的队伍获胜。游戏开始前，我们都迫不及待想要展示自己的投篮技术。\n我第一个上场，心里有些紧张，但我告诉自己要放轻松。当我拿起篮球站在三分线外时，心里默念着：\"一定要投进去！\"我深吸一口气，认真地瞄准篮筐，轻轻一抛，篮球在空中划出一个优美的弧线，终于\"咚\"地一声进了篮筐！我兴奋地挥舞起双手，队友们也为我欢呼鼓掌。\n接下来的轮到小明和小华，他们也都非常出色，轮番投中多个球，使蓝队的分数不断攀升。红队的小丽投篮技术也很不错，虽然一开始有些失误，但她很快调整状态，接连投中几球，为红队追赶分数。\n随着比赛的进行，大家的气氛越来越热烈，操场上充满了欢声笑语。有的同学为自己的队友加油打气，有的则在一旁跃跃欲试。突然，小杰的投篮时机把握得非常好，他一连投中了三球，红队的分数迅速上涨，让我们感受到了一些压力。\n比赛进入了尾声，我和队友们迅速商量战术，决定增加配合，尽量打好每一次投篮。最后的几轮，我和小明默契地传球，终于又得到了几分。经过激烈的角逐，最后的比分是蓝队35分，红队30分，蓝队获得了胜利。\n虽然红队输掉了比赛，但大家都十分开心。我们一起庆祝，享受着这个愉快的时刻。在游戏结束后，我们互相祝贺，也约定下次再来挑战。今天的投篮游戏不仅锻炼了我们的身体，更让我们体会到了友谊和团队协作的重要性。\n这场投篮游戏让我留下了深刻的印象，我希望以后还能有更多这样的活动，让我们的校园生活更加丰富多彩！",
                e)
     r.evalu_visualize()
+    r.img.save("../asset/render.png")
