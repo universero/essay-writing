@@ -89,10 +89,23 @@ SEQ_COLOR = (101, 130, 255)
 SEQ_TEXT_SIZE = 7 * coefficient
 
 # 全文评价
-ALL_MARGIN_TOP = 10 * coefficient
-ALL_MARGIN_LEFT = 0.6 * GRID_WIDTH
-ALL_MARGIN_RIGHT = 0.6 * GRID_WIDTH
-ALL_ICON = Image.open("../asset/arrow.png")
+ALL_MARGIN_TOP = 20 * coefficient
+ALL_MARGIN_LEFT = int(0.6 * GRID_WIDTH)
+ALL_MARGIN_RIGHT = 45 * coefficient
+ALL_WIDTH = 492 * coefficient
+ALL_ITEM_GAP = 20 * coefficient
+ALL_ICON_RADIUS = 5 * coefficient
+ALL_ICON_WIDTH = 3 * coefficient
+ALL_TAG_SIZE = 18 * coefficient
+ALL_SCORE_SIZE = 2 * ALL_TAG_SIZE
+ALL_TEXT_SIZE = 17 * coefficient
+ALL_TEXT_GAP = 8 * coefficient
+ALL_PER_ROW = int(ALL_WIDTH // ALL_TEXT_SIZE)
+ALL_COLOR = "#F19E3E"
+ALL_LINE = 1 * coefficient
+ALL_DASHED_LINE = 1 * coefficient
+ALL_DASHED_LINE_LEN = 6 * coefficient
+ALL_DASHED_GAP = 3 * coefficient
 
 # 字体配置
 EVAL_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=17 * coefficient)
@@ -102,6 +115,9 @@ MID_BAR_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.t
 SEQ_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=SEQ_TEXT_SIZE)
 SIDE_BAR_ITEM_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=SIDE_BAR_ITEM_SIZE)
 SIDE_BAR_TEXT_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=SIDE_BAR_TEXT_SIZE)
+ALL_TAG_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=ALL_TAG_SIZE)
+ALL_SCORE_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=ALL_SCORE_SIZE)
+ALL_TEXT_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=ALL_TEXT_SIZE)
 
 
 class Render:
@@ -163,7 +179,7 @@ class Render:
 
         # 根据文章总数构建页面长度
         page_number = (rows * (GRID_HEIGHT + GAP_BAR_HEIGHT) + len(paras) * (
-                MID_BAR_HEIGHT + MID_BAR_MARGIN_TOP * 2)) // PAGE_HEIGHT + 1
+                MID_BAR_HEIGHT + MID_BAR_MARGIN_TOP * 2)) // PAGE_HEIGHT + 2
         self.img = Image.new("RGBA", (PAGE_WIDTH, PAGE_HEIGHT * page_number), "white")
 
     def paras_base(self):
@@ -250,12 +266,8 @@ class Render:
             draw.text((left, upper), no, font=MID_BAR_FONT, fill=NO_COLOR, anchor="la")
             text = util.html_strip(self.evalu.comments.paragraph_comments[i])
             # 分行写入段评实际内容
-            rows = (len(text) - 1) // MID_BAR_PER_ROW + 1
-            for j in range(int(rows)):
-                end = (j + 1) * MID_BAR_PER_ROW
-                row_text = text[j * MID_BAR_PER_ROW:end if end < len(text) else -1]
-                draw.text((left, upper + (MID_BAR_TEXT_SIZE + MID_BAR_TEXT_GAP) * (j + 1)),
-                          row_text, font=EVAL_FONT, fill="black", anchor="la")
+            rows = util.draw_multi_row_text(draw, text, MID_BAR_PER_ROW, left, upper, MID_BAR_TEXT_SIZE,
+                                            MID_BAR_TEXT_GAP, EVAL_FONT)
 
     def sick_sentences(self):
         """绘制病句标识"""
@@ -367,13 +379,8 @@ class Render:
                 upper += SIDE_BAR_TEXT_GAP + SIDE_BAR_ITEM_SIZE
                 draw.text((left, upper), sidebar.tag, font=SIDE_BAR_ITEM_FONT, fill=sidebar.color, anchor="la")
             # 分行写入content
-            text = sidebar.content
-            rows = (len(text) - 1) // SIDE_BAR_PER_ROW + 1
-            for j in range(int(rows)):
-                end = (j + 1) * SIDE_BAR_PER_ROW
-                row_text = text[j * SIDE_BAR_PER_ROW:end if end < len(text) else len(text)]
-                draw.text((left, upper + (SIDE_BAR_TEXT_SIZE + SIDE_BAR_TEXT_GAP) * (j + 1)),
-                          row_text, font=SIDE_BAR_TEXT_FONT, fill="black", anchor="la")
+            rows = util.draw_multi_row_text(draw, sidebar.content, SIDE_BAR_PER_ROW, left, upper, SIDE_BAR_TEXT_SIZE,
+                                            SIDE_BAR_TEXT_GAP, SIDE_BAR_TEXT_FONT)
             last = upper + (SIDE_BAR_TEXT_SIZE + SIDE_BAR_TEXT_GAP) * rows + SIDE_BAR_ITEM_GAP
 
     def seq(self, number, para_no, row, col, color):
@@ -400,6 +407,38 @@ class Render:
                     end_index += GRID_PER_ROW
                 return i, start_index // GRID_PER_ROW, start_index % GRID_PER_ROW, end_index // GRID_PER_ROW, end_index % GRID_PER_ROW
         return -1, -1, -1, -1, -1
+
+    def essay_comment(self):
+        """各维度总评"""
+        texts = [("总评", self.evalu.comments.passage_comments, self.evalu.score_str),
+                 ("内容", self.evalu.content.comments, self.evalu.content.score_str),
+                 ("表达", self.evalu.expression.comments, self.evalu.expression.score_str),
+                 ("主题", self.evalu.relevance.comments, self.evalu.relevance.score_str), ]
+        draw = ImageDraw.Draw(self.img)
+        start = self.paras[-1].bar_end + ALL_MARGIN_TOP
+        left, upper = MARGIN_LEFT + ALL_MARGIN_LEFT, start + ALL_ITEM_GAP
+        for i in range(len(texts)):
+            (tag, content, score) = texts[i]
+            # tag
+            draw.circle((left + ALL_ICON_RADIUS, upper + ALL_ICON_RADIUS), ALL_ICON_RADIUS, outline=ALL_COLOR,
+                        width=ALL_ICON_WIDTH)
+            draw.text((left + 8 * ALL_ICON_RADIUS, upper + ALL_ICON_RADIUS), tag, font=ALL_TAG_FONT, fill=ALL_COLOR,
+                      anchor="mm")
+            draw.text((left + ALL_WIDTH - ALL_MARGIN_RIGHT, upper + ALL_ICON_RADIUS), score,
+                      font=ALL_SCORE_FONT, fill=ALL_COLOR, anchor="mm")
+            upper += ALL_TAG_SIZE
+            # 分行写入content
+            text = util.html_strip(content)
+            rows = util.draw_multi_row_text(draw, text, ALL_PER_ROW, left, upper, ALL_TEXT_SIZE, ALL_TEXT_GAP,
+                                            ALL_TEXT_FONT)
+            upper += (ALL_TEXT_SIZE + ALL_TEXT_GAP) * rows + ALL_ITEM_GAP * 3.5
+            if i != len(texts) - 1:
+                util.draw_dashed_line(draw, (left, upper - 1.5 * ALL_ITEM_GAP),
+                                      (left + ALL_WIDTH - ALL_MARGIN_RIGHT, upper - 1.5 * ALL_ITEM_GAP),
+                                      ALL_DASHED_LINE_LEN,
+                                      ALL_DASHED_GAP, fill="black", width=ALL_DASHED_LINE)
+        draw.rectangle([(MARGIN_LEFT, start), (left + ALL_WIDTH, upper - ALL_ITEM_GAP)], outline="black",
+                       width=ALL_LINE)
 
 
 class Para:
@@ -491,4 +530,5 @@ if __name__ == '__main__':
                "今天的阳光明媚，小鸟在树间欢快地歌唱，校园里一片生机勃勃。午休时，我们班的同学们聚集在操场上，准备进行一场有趣的投篮游戏。\n我们首先分成了两队，一队是蓝队，另一队是红队。蓝队的队员有我、小明和小华，红队则由小丽、小杰和小雨组成。比赛规则很简单，每人轮流投篮，看哪队投进去的篮球最多，最后得分高的队伍获胜。游戏开始前，我们都迫不及待想要展示自己的投篮技术。\n我第一个上场，心里有些紧张，但我告诉自己要放轻松。当我拿起篮球站在三分线外时，心里默念着：\"一定要投进去！\"我深吸一口气，认真地瞄准篮筐，轻轻一抛，篮球在空中划出一个优美的弧线，终于\"咚\"地一声进了篮筐！我兴奋地挥舞起双手，队友们也为我欢呼鼓掌。\n接下来的轮到小明和小华，他们也都非常出色，轮番投中多个球，使蓝队的分数不断攀升。红队的小丽投篮技术也很不错，虽然一开始有些失误，但她很快调整状态，接连投中几球，为红队追赶分数。\n随着比赛的进行，大家的气氛越来越热烈，操场上充满了欢声笑语。有的同学为自己的队友加油打气，有的则在一旁跃跃欲试。突然，小杰的投篮时机把握得非常好，他一连投中了三球，红队的分数迅速上涨，让我们感受到了一些压力。\n比赛进入了尾声，我和队友们迅速商量战术，决定增加配合，尽量打好每一次投篮。最后的几轮，我和小明默契地传球，终于又得到了几分。经过激烈的角逐，最后的比分是蓝队35分，红队30分，蓝队获得了胜利。\n虽然红队输掉了比赛，但大家都十分开心。我们一起庆祝，享受着这个愉快的时刻。在游戏结束后，我们互相祝贺，也约定下次再来挑战。今天的投篮游戏不仅锻炼了我们的身体，更让我们体会到了友谊和团队协作的重要性。\n这场投篮游戏让我留下了深刻的印象，我希望以后还能有更多这样的活动，让我们的校园生活更加丰富多彩！",
                e)
     r.evalu_visualize()
-    r.img.save("../asset/render.png")
+    r.img.show()
+    # r.img.save("../asset/render.png")
