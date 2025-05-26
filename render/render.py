@@ -27,7 +27,7 @@ PAGE_WIDTH = 702 * coefficient  # 页面宽度为702px
 GRID_HEIGHT = 34 * coefficient  # 每个格子的高度
 GRID_WIDTH = 30 * coefficient  # 每个格子的宽度（px）
 GRID_PER_ROW = 17  # 每行格子数
-GRID_MARGIN_TOP = 24 * coefficient  # 上边距
+MARGIN_TOP = 24 * coefficient  # 上边距
 MARGIN_LEFT = 24 * coefficient  # 左边距
 GRID_TEXT_SIZE = 17 * coefficient
 GRID_LINE = 3
@@ -48,8 +48,7 @@ MID_BAR_PER_ROW = int((MID_BAR_WIDTH - MID_BAR_MARGIN_LEFT * 2) // (MID_BAR_TEXT
 MID_BAR_LINE = 5
 
 # 侧边评价
-SIDE_BAR_HEIGHT = 946 * coefficient
-SIDE_BAR_WIDTH = 140 * coefficient
+SIDE_BAR_WIDTH = 140 * coefficient  # 侧边评价宽度
 SIDE_BAR_MARGIN_LEFT = 3 * coefficient  # 侧边评价与侧边栏左侧的间距
 SIDE_BAR_MARGIN_RIGHT = 11 * coefficient  # 和右侧的区别
 SIDE_BAR_MARGIN_TOP = 24 * coefficient  # 与顶部距离
@@ -64,8 +63,8 @@ SIDE_BAR_COLOR = "#F19E3E"
 # 段落编号
 NO_MARGIN_LEFT = GRID_WIDTH * 0.2 + MARGIN_LEFT  # 段落编号距离页左侧距离
 NO_MARGIN_TOP = GRID_HEIGHT * 0.2  # 段落编号距离所在方格的上侧距离
-NO_HEIGHT = GRID_HEIGHT * 0.6
-NO_WIDTH = GRID_WIDTH * 0.8
+NO_HEIGHT = GRID_HEIGHT * 0.6  # 编号高度
+NO_WIDTH = GRID_WIDTH * 0.8  # 编号宽度
 NO_COLOR = "#F19E3E"
 NO_TEXT_SIZE = 10 * coefficient
 
@@ -78,8 +77,8 @@ TYPO_MASK_COLOR = (255, 95, 93, 70)  # 透明红色
 
 # 好词好句
 HIGHLIGHT_MASK_COLOR = (101, 130, 255, 70)  # 透明蓝色
-HIGHLIGHT_AMPLITUDE = 1.1 * coefficient
-HIGHLIGHT_WAVELENGTH = 15 * coefficient
+HIGHLIGHT_AMPLITUDE = 1.1 * coefficient  # 波浪线波幅
+HIGHLIGHT_WAVELENGTH = 15 * coefficient  # 波浪线波长
 HIGHLIGHT_LINE_COLOR = (101, 130, 255)
 HIGHLIGHT_LINE = int(1.5 * coefficient)
 
@@ -129,14 +128,18 @@ class Render:
         """
         初始化
         :param title: 作文标题
-        :param content: 作文内容分段
+        :param content: 作文内容分段\
+        :param evalu:  批改结果
         """
         self.title = title
         self.content = content
-        self.paras = []
+        self.paras = []  # 分段结果
         self.evalu = evalu
-        self.todo_sidebar = []
+        self.todo_sidebar = []  # 需要绘制的侧边栏项
         self.img = Image.new("RGBA", (PAGE_WIDTH, PAGE_HEIGHT), "white")
+        self.imgs = []  # 分页结果
+        self.comment_end = None
+        self.comment_end = None
 
     def evalu_visualize(self):
         """可视化批改结果"""
@@ -168,7 +171,7 @@ class Render:
             para_len = len(paras[i]) + 2
             # 本段行数
             row = (para_len - 1) // GRID_PER_ROW + 1
-            text_start = GRID_MARGIN_TOP
+            text_start = MARGIN_TOP
             if rows != 0:
                 text_start = self.paras[i - 1].bar_end + MID_BAR_MARGIN_TOP
             text_end = text_start + row * (GRID_HEIGHT + GAP_BAR_HEIGHT)
@@ -357,11 +360,8 @@ class Render:
         draw = ImageDraw.Draw(self.img)
         right = PAGE_WIDTH - SIDE_BAR_MARGIN_RIGHT
         left = right - SIDE_BAR_WIDTH
-        upper = self.paras[0].text_start
-        down = self.paras[-1].bar_end
-        draw.rectangle([(left, upper),
-                        (right, down)],
-                       outline="black", width=SIDE_BAR_LINE)
+        upper, down = self.paras[0].text_start, self.paras[-1].bar_end
+        draw.rectangle([(left, upper), (right, down)], outline="black", width=SIDE_BAR_LINE)
         self.todo_sidebar = sort_sidebar(self.todo_sidebar)
         last, left = SIDE_BAR_MARGIN_TOP, PAGE_WIDTH - SIDE_BAR_WIDTH - SIDE_BAR_MARGIN_RIGHT + SIDE_BAR_MARGIN_LEFT
         for i in range(len(self.todo_sidebar)):
@@ -439,6 +439,64 @@ class Render:
                                       ALL_DASHED_GAP, fill="black", width=ALL_DASHED_LINE)
         draw.rectangle([(MARGIN_LEFT, start), (left + ALL_WIDTH, upper - ALL_ITEM_GAP)], outline="black",
                        width=ALL_LINE)
+        self.comment_start, self.comment_end = start, upper - ALL_ITEM_GAP
+
+    def paging(self):
+        """
+        将长图分割成多个A4大小的页以便于打印
+        可拆分位置:  段评开始前, 段评结束后, 行间间隔
+        """
+        height = self.img.height
+        if height <= PAGE_HEIGHT:  # 仅一页
+            self.imgs.append(self.img)
+            return
+
+        croppable = []  # 维护每一个允许裁剪的位置
+        for para in self.paras:
+            start = para.text_start
+            # 行间间隔
+            for i in range(para.rows):
+                line_bottom = para.text_start + (i + 1) * (GRID_HEIGHT + GAP_BAR_HEIGHT)
+                croppable.append(line_bottom)
+            # 段评
+            croppable.append(para.bar_start)
+            croppable.append(para.bar_end)
+        croppable.append(height)
+        now, cur, pre = PAGE_HEIGHT - MARGIN_TOP, 0, MARGIN_TOP
+
+        right = PAGE_WIDTH - SIDE_BAR_MARGIN_RIGHT
+        left = right - SIDE_BAR_WIDTH
+
+        def cut_one(start_row, end_row):
+            page = Image.new("RGBA", (PAGE_WIDTH, PAGE_HEIGHT), "white")
+            page.paste(self.img.crop((0, start_row, PAGE_WIDTH, end_row)), (0, MARGIN_TOP))
+            draw = ImageDraw.Draw(page)
+            draw.line([(left, MARGIN_TOP), (right, MARGIN_TOP)], fill="black", width=SIDE_BAR_LINE)
+            draw.line([(left, end_row - start_row + MARGIN_TOP), (right, end_row - start_row + MARGIN_TOP)],
+                      fill="black", width=SIDE_BAR_LINE)
+            self.imgs.append(page)
+
+        # 正文部分
+        while now < height:
+            while cur < len(croppable) and croppable[cur] < now:
+                cur += 1
+            if cur <= len(croppable):
+                cut = croppable[cur - 1]
+                cur += 1
+                cut_one(pre, cut)
+                pre = cut
+                now = cut + PAGE_HEIGHT - MARGIN_TOP
+            if cur >= len(croppable):
+                break
+
+        # 总评部分 (一般不会超过一页)
+        leave = self.img.crop((0, self.comment_start, PAGE_WIDTH, self.comment_end))
+        if leave.height + self.imgs[-1].height <= PAGE_HEIGHT:  # 可以加到最后一页
+            self.imgs[-1].paste(leave, (0, pre))
+        else:
+            page = Image.new("RGBA", (PAGE_WIDTH, PAGE_HEIGHT), "white")
+            page.paste(leave, (0, MARGIN_TOP))
+            self.imgs.append(page)
 
 
 class Para:
@@ -485,11 +543,7 @@ def sort_sidebar(sidebars: list[SideBar]) -> list[SideBar]:
     - kind, tag, content, color 用空格拼接
     """
     # 先排序
-    sorted_sidebars = sorted(
-        sidebars,
-        key=lambda sb: (sb.para, sb.row, sb.col)
-    )
-
+    sorted_sidebars = sorted(sidebars, key=lambda sb: (sb.para, sb.row, sb.col))
     # 合并相同 (para, row, col) 的元素
     merged_sidebars = []
     for key, group in groupby(sorted_sidebars, key=lambda sb: (sb.para, sb.row, sb.col)):
@@ -499,25 +553,17 @@ def sort_sidebar(sidebars: list[SideBar]) -> list[SideBar]:
         else:
             # 合并第一个元素，其他属性拼接（去重）
             first = group_list[0]
-
             # 合并 kind，去重
             merged_kind = "，".join(set(sb.kind for sb in group_list))
             # 合并 tag，去重
             merged_tag = "，".join(set(sb.tag for sb in group_list))
             # 合并 content（不去重）
             merged_content = " ".join(sb.content for sb in group_list)
-
             merged = SideBar(
-                para=first.para,
-                row=first.row,
-                col=first.col,
-                kind=merged_kind,
-                tag=merged_tag,
-                content=merged_content,
-                color=first.color,
+                para=first.para, row=first.row, col=first.col,
+                kind=merged_kind, tag=merged_tag, content=merged_content, color=first.color,
             )
             merged_sidebars.append(merged)
-
     return merged_sidebars
 
 
@@ -530,5 +576,8 @@ if __name__ == '__main__':
                "今天的阳光明媚，小鸟在树间欢快地歌唱，校园里一片生机勃勃。午休时，我们班的同学们聚集在操场上，准备进行一场有趣的投篮游戏。\n我们首先分成了两队，一队是蓝队，另一队是红队。蓝队的队员有我、小明和小华，红队则由小丽、小杰和小雨组成。比赛规则很简单，每人轮流投篮，看哪队投进去的篮球最多，最后得分高的队伍获胜。游戏开始前，我们都迫不及待想要展示自己的投篮技术。\n我第一个上场，心里有些紧张，但我告诉自己要放轻松。当我拿起篮球站在三分线外时，心里默念着：\"一定要投进去！\"我深吸一口气，认真地瞄准篮筐，轻轻一抛，篮球在空中划出一个优美的弧线，终于\"咚\"地一声进了篮筐！我兴奋地挥舞起双手，队友们也为我欢呼鼓掌。\n接下来的轮到小明和小华，他们也都非常出色，轮番投中多个球，使蓝队的分数不断攀升。红队的小丽投篮技术也很不错，虽然一开始有些失误，但她很快调整状态，接连投中几球，为红队追赶分数。\n随着比赛的进行，大家的气氛越来越热烈，操场上充满了欢声笑语。有的同学为自己的队友加油打气，有的则在一旁跃跃欲试。突然，小杰的投篮时机把握得非常好，他一连投中了三球，红队的分数迅速上涨，让我们感受到了一些压力。\n比赛进入了尾声，我和队友们迅速商量战术，决定增加配合，尽量打好每一次投篮。最后的几轮，我和小明默契地传球，终于又得到了几分。经过激烈的角逐，最后的比分是蓝队35分，红队30分，蓝队获得了胜利。\n虽然红队输掉了比赛，但大家都十分开心。我们一起庆祝，享受着这个愉快的时刻。在游戏结束后，我们互相祝贺，也约定下次再来挑战。今天的投篮游戏不仅锻炼了我们的身体，更让我们体会到了友谊和团队协作的重要性。\n这场投篮游戏让我留下了深刻的印象，我希望以后还能有更多这样的活动，让我们的校园生活更加丰富多彩！",
                e)
     r.evalu_visualize()
-    r.img.show()
-    # r.img.save("../asset/render.png")
+    # r.img.show()
+    r.img.save("../asset/render.png")
+    r.paging()
+    for i in range(len(r.imgs)):
+        r.imgs[i].save("../asset/render-{}.png".format(i))
