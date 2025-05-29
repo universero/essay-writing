@@ -1,0 +1,21 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "D:\\Projects\\xhpolaris\\essay-writing\\locator\\datasets",
+  "weights_dir": "D:\\Projects\\xhpolaris\\essay-writing\\locator\\resource\\weights",
+  "runs_dir": "runs",
+  "uuid": "5ba04761526c1eddd07091d48a0896c084092996006912f5dc1ce722125e0911",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "hub": true,
+  "mlflow": true,
+  "neptune": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": true
+}

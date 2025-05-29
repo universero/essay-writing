@@ -1,9 +1,6 @@
 """
-批改结果可视化渲染
-steps:
-  - 基础作文纸生成
-  - 批注蒙版叠加
-  - 长图拆分
+render 渲染类, 负责批改后图片渲染
+核心工作包括作文纸生成, 批注痕迹绘制, A4大小切割
 """
 import json
 import os
@@ -107,16 +104,16 @@ ALL_DASHED_LINE_LEN = 6 * coefficient
 ALL_DASHED_GAP = 3 * coefficient
 
 # 字体配置
-EVAL_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=17 * coefficient)
-TEXT_FONT = ImageFont.truetype(os.path.abspath('../asset/ToneOZ-Tsuipita-TC（仅汉字）.ttf'), size=GRID_TEXT_SIZE)
-NO_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=NO_TEXT_SIZE)
-MID_BAR_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=MID_BAR_TEXT_SIZE)
-SEQ_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=SEQ_TEXT_SIZE)
-SIDE_BAR_ITEM_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=SIDE_BAR_ITEM_SIZE)
-SIDE_BAR_TEXT_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=SIDE_BAR_TEXT_SIZE)
-ALL_TAG_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=ALL_TAG_SIZE)
-ALL_SCORE_FONT = ImageFont.truetype(os.path.abspath('../asset/微软雅黑粗体.ttf'), size=ALL_SCORE_SIZE)
-ALL_TEXT_FONT = ImageFont.truetype(os.path.abspath('../asset/瑞美加张清平硬笔行书.ttf'), size=ALL_TEXT_SIZE)
+EVAL_FONT = ImageFont.truetype(os.path.abspath('resource/瑞美加张清平硬笔行书.ttf'), size=17 * coefficient)
+TEXT_FONT = ImageFont.truetype(os.path.abspath('resource/ToneOZ-Tsuipita-TC（仅汉字）.ttf'), size=GRID_TEXT_SIZE)
+NO_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=NO_TEXT_SIZE)
+MID_BAR_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=MID_BAR_TEXT_SIZE)
+SEQ_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=SEQ_TEXT_SIZE)
+SIDE_BAR_ITEM_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=SIDE_BAR_ITEM_SIZE)
+SIDE_BAR_TEXT_FONT = ImageFont.truetype(os.path.abspath('resource/瑞美加张清平硬笔行书.ttf'), size=SIDE_BAR_TEXT_SIZE)
+ALL_TAG_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=ALL_TAG_SIZE)
+ALL_SCORE_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=ALL_SCORE_SIZE)
+ALL_TEXT_FONT = ImageFont.truetype(os.path.abspath('resource/瑞美加张清平硬笔行书.ttf'), size=ALL_TEXT_SIZE)
 
 
 class Render:
