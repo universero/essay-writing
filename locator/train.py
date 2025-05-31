@@ -1,9 +1,8 @@
+import os
 from pathlib import Path
 
 import torch
 from ultralytics import YOLO
-
-import os
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -29,14 +28,20 @@ def validate_dataset(data_yaml):
 
 
 if __name__ == "__main__":
+    print(torch.cuda.is_available())          # 应输出 True
+    print(torch.version.cuda)                # 应显示 CUDA 版本（如 12.1 或 12.4）
+    print(torch.cuda.get_device_name(0))     # 应显示 "NVIDIA GeForce RTX 4060 Laptop GPU"
     validate_dataset('resource/dataset/data.yaml')
     model = YOLO(MODEL)
     result = model.train(
         data=DATA,
         epochs=200,
         batch=8,
-        imgsz=640,
+        imgsz=1440,
         name='essay_test',
-        mosaic=1.0,  # 马赛克增强概率
-        mixup=0.2,  # 图像混合增强
+        mosaic=0.5,  # 马赛克增强概率
+        mixup=0.1,  # 图像混合增强
+        device=0,
+        augment=False,  # 关闭自动增强
+        dropout=0.2,  # 添加dropout防止过拟合
     )
