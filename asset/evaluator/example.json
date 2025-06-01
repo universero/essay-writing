@@ -1,0 +1,190 @@
+{
+    "ch": {
+        "comments": {
+            "paragraph_comments": [
+                "<p>开头生动，用环境描写烘托气氛，但可以更简洁地切入主题，减少铺垫，直接点明活动内容。  </p>",
+                "<p>分组和规则介绍清晰，但可以加入更多心理描写或期待感，让读者更投入比赛氛围。  </p>",
+                "<p>动作和心理描写细腻，投篮过程具体，但可以适当加入队友的反应，增强互动感。  </p>",
+                "<p>比赛过程描述流畅，但可以突出团队合作或竞争感，让情节更有张力。  </p>",
+                "<p>气氛描写到位，但可以加入更多细节展现同学间的互动，比如语言或表情。  </p>",
+                "<p>战术和比赛结果交代清楚，但可以强化胜利的喜悦或团队的默契，让情感更饱满。  </p>",
+                "<p>结尾点明友谊和协作的意义，但可以更自然地升华主题，避免说教感。  </p>",
+                "<p>总结感受真挚，但可以更具体地表达期待，比如希望下次如何改进或挑战。</p>"
+            ],
+            "passage_comments": "你的文章相当优秀！作文围绕“有趣的投篮游戏”展开，内容详实，细节刻画细腻，能够运用丰富的词汇和生动的语句进行描写，语句表达清晰准确。小花狮给你点赞！"
+        },
+        "content": {
+            "comments": "这篇文章围绕着“有趣的投篮游戏”展开。作文<strong><span style=\"color: #507BFC\">内容详实、词藻丰富</span></strong>，在遣词造句上展现出小作者<strong><span style=\"color: #507BFC\">出色的词汇量与写作能力</span></strong>。",
+            "score": 8,
+            "score_str": "A+"
+        },
+        "counting": {
+            "adj_adv_num": 17,
+            "char_num": 741,
+            "dieci_num": 0,
+            "fluency": -3.023311338641427,
+            "grammar_mistake_num": 0,
+            "highlight_sents_num": 4,
+            "idiom_num": 4,
+            "noun_type_num": 99,
+            "para_num": 8,
+            "sent_num": 23,
+            "unique_word_num": 239,
+            "verb_type_num": 93,
+            "word_num": 464,
+            "written_mistake_num": 0
+        },
+        "expression": {
+            "comments": "本篇文章<strong><span style=\"color: #507BFC\">流畅程度高</span></strong>，展现出了小作者的<strong><span style=\"color: #507BFC\">逻辑思维能力</span></strong>。在语句上<strong><span style=\"color: #507BFC\">清晰准确</span></strong>，展现出<strong><span style=\"color: #507BFC\">出色的表达能力</span></strong>。",
+            "score": 8,
+            "score_str": "A+"
+        },
+        "grammar": {
+            "grammar_sentence": [],
+            "sick_sentence": [
+                {
+                    "end_pos": 203,
+                    "ori": "我第一个上场，心里有些紧张，但我告诉自己要放轻松。",
+                    "revised": "检查在表达中是否出现了过多的\"我\"，重复的主语会导致语义的冗余",
+                    "score": -3.1068532466888428,
+                    "start_pos": 178,
+                    "type": "重复啰嗦"
+                }
+            ],
+            "typo": [
+                {
+                    "end_pos": 323,
+                    "extra": "接下来的轮到小明和小华，他们也都非常出色，轮番投中多个球，使蓝队的分数不断攀升。红队的小丽投篮技术也很不错，虽然一开始有些失误，但她很快调整状态，接连投中几球，为红队追赶分数。",
+                    "ori": "，",
+                    "revised": "。",
+                    "start_pos": 322,
+                    "type": "标点问题"
+                },
+                {
+                    "end_pos": 356,
+                    "extra": "接下来的轮到小明和小华，他们也都非常出色，轮番投中多个球，使蓝队的分数不断攀升。红队的小丽投篮技术也很不错，虽然一开始有些失误，但她很快调整状态，接连投中几球，为红队追赶分数。",
+                    "ori": "，",
+                    "revised": "。",
+                    "start_pos": 355,
+                    "type": "标点问题"
+                },
+                {
+                    "end_pos": 612,
+                    "extra": "虽然红队输掉了比赛，但大家都十分开心。我们一起庆祝，享受着这个愉快的时刻。在游戏结束后，我们互相祝贺，也约定下次再来挑战。今天的投篮游戏不仅锻炼了我们的身体，更让我们体会到了友谊和团队协作的重要性。",
+                    "ori": "。",
+                    "revised": "，",
+                    "start_pos": 611,
+                    "type": "标点问题"
+                }
+            ],
+            "wording_error": []
+        },
+        "handwriting": {
+            "comments": "Fail to check handwritting",
+            "score": -1,
+            "score_str": "F"
+        },
+        "highlights": {
+            "advance_words": [
+                {
+                    "end_pos": 28,
+                    "memo": {
+                        "text": "生机勃勃"
+                    },
+                    "start_pos": 24,
+                    "type": "成语"
+                },
+                {
+                    "end_pos": 165,
+                    "memo": {
+                        "text": "迫不及待"
+                    },
+                    "start_pos": 161,
+                    "type": "成语"
+                },
+                {
+                    "end_pos": 446,
+                    "memo": {
+                        "text": "跃跃欲试"
+                    },
+                    "start_pos": 442,
+                    "type": "成语"
+                },
+                {
+                    "end_pos": 740,
+                    "memo": {
+                        "text": "丰富多彩"
+                    },
+                    "start_pos": 736,
+                    "type": "成语"
+                }
+            ],
+            "descriptive": [],
+            "logic_words": [],
+            "rhetoric": [
+                {
+                    "end_pos": 29,
+                    "memo": {
+                        "text": "今天的阳光明媚，小鸟在树间欢快地歌唱，校园里一片生机勃勃。"
+                    },
+                    "start_pos": 0,
+                    "type": "语言"
+                },
+                {
+                    "end_pos": 177,
+                    "memo": {
+                        "text": "游戏开始前，我们都迫不及待想要展示自己的投篮技术。"
+                    },
+                    "start_pos": 152,
+                    "type": "语言"
+                },
+                {
+                    "end_pos": 447,
+                    "memo": {
+                        "text": "有的同学为自己的队友加油打气，有的则在一旁跃跃欲试。"
+                    },
+                    "start_pos": 421,
+                    "type": "语言"
+                },
+                {
+                    "end_pos": 741,
+                    "memo": {
+                        "text": "这场投篮游戏让我留下了深刻的印象，我希望以后还能有更多这样的活动，让我们的校园生活更加丰富多彩！"
+                    },
+                    "start_pos": 693,
+                    "type": "语言"
+                },
+                {
+                    "end_pos": 29,
+                    "memo": {
+                        "text": "今天的阳光明媚，小鸟在树间欢快地歌唱，校园里一片生机勃勃。"
+                    },
+                    "start_pos": 0,
+                    "types": [
+                        "比拟"
+                    ]
+                },
+                {
+                    "end_pos": 495,
+                    "memo": {
+                        "text": "突然，小杰的投篮时机把握得非常好，他一连投中了三球，红队的分数迅速上涨，让我们感受到了一些压力。"
+                    },
+                    "start_pos": 447,
+                    "types": [
+                        "夸张"
+                    ]
+                }
+            ]
+        },
+        "relevance": {
+            "comments": "本作文对题目<strong><span style=\"color: #507BFC\">把控得当</span></strong>，做到了<strong><span style=\"color: #507BFC\">正确审题、写作扣题</span></strong>，展现出了出色的审题能力！",
+            "score": 8,
+            "score_str": "A+"
+        },
+        "score": 8,
+        "score_absolute": 4.0,
+        "score_ori": 8,
+        "score_str": "A+",
+        "score_str_ori": "A+"
+    }
+}

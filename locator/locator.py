@@ -2,14 +2,26 @@
 locator 用于作文主体部分和标题的定位
 基于 YOLO 11, 负责作文主体部分的定位与裁切
 """
+import os
 from dataclasses import dataclass
 from typing import Tuple
 
+import cv2
 import numpy as np
+from flask import Blueprint, request
 from ultralytics import YOLO
 
-MODEL = './resource/weights/200e4b1440sz-n.pt'
-IMGSZ = 640
+from common.rex import Response
+
+bp = Blueprint('locator', __name__)
+
+MODEL = 'locator/resource/weights/200e4b1440sz-n.pt'
+DEVICE = 'cpu'
+IMGSZ = 800
+
+instance = None
+# 解决动态链接库冲突
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
 class Locator:
@@ -53,7 +65,7 @@ class Locator:
                 ))
 
         # 按类别分组并选择置信度最高的
-        output = {"title": None, "content": None}
+        output: dict[str, 'Box|None'] = {"title": None, "content": None}
         for box in sorted(detections, key=lambda x: -x.conf):
             if box.c == 0 and output["title"] is None:  # title
                 output["title"] = box
@@ -68,7 +80,7 @@ class Locator:
 
 
 @dataclass
-class Box:
+class Box(Response):
     """表示检测框的坐标和类别"""
     c: int  # 类别 (0:title, 1:content)
     x1: float  # 左上角x
@@ -89,3 +101,25 @@ class Box:
             # 确保调整后仍然是有效框
             if self.y1 >= self.y2:
                 self.y2 = self.y1 + 10  # 最小高度保护
+
+    def to_dict(self):
+        return {
+            "c": self.c,
+            "x1": self.x1,
+            "y1": self.y1,
+            "x2": self.x2,
+            "y2": self.y2,
+        }
+
+
+@bp.post("/locate")
+def locate():
+    global instance
+    if instance is None:
+        instance = Locator(MODEL, DEVICE)
+    imgs = list(cv2.imdecode(np.frombuffer(file.read(), np.uint8), cv2.IMREAD_COLOR) for file in
+                request.files.getlist("images"))
+    boxs = []
+    for img in imgs:
+        boxs.append(instance.locate(img))
+    return boxs

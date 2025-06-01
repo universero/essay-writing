@@ -129,6 +129,8 @@ class MicroEvaluationBuilder:
         aw = MicroEvaluation.Highlights.AdvanceWord()
         aw.end_pos = data.get("end_pos", 0)
         aw.memo = data.get("memo", {})
+        if isinstance(aw.memo, str):
+            aw.memo = json.loads(aw.memo.replace("'", '"'))
         aw.start_pos = data.get("start_pos", 0)
         aw.type = data.get("type", "")
         return aw
@@ -154,24 +156,8 @@ class MicroEvaluationBuilder:
     def to_pretty_json(evaluation: MicroEvaluation) -> str:
         """序列化方法适配新版结构"""
 
-        def convert(obj):
-            if isinstance(obj, (str, int, float, bool)):
-                return obj
-            if obj is None:
-                return None
-            if isinstance(obj, list):
-                return [convert(item) for item in obj]
-            if hasattr(obj, '__dict__'):
-                return {
-                    key: convert(value)
-                    for key, value in obj.__dict__.items()
-                    if not key.startswith('_')
-                }
-            return str(obj)
-
-        ch_data = convert(evaluation)
         return json.dumps(
-            {"ch": ch_data},
+            {"ch": evaluation.to_dict()},
             indent=2,
             ensure_ascii=False,
             separators=(',', ': ')
@@ -180,7 +166,7 @@ class MicroEvaluationBuilder:
 
 if __name__ == '__main__':
     # 测试用例
-    with open('../asset/example.json', encoding='utf-8') as f:
+    with open('../asset/evaluator/example.json', encoding='utf-8') as f:
         raw_data = json.load(f)
 
     e = MicroEvaluationBuilder.build(raw_data)

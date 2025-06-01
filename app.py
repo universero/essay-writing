@@ -1,7 +1,12 @@
+import os
+
 from flask import Flask
 from flask_cors import CORS
 
+from evaluator import evaluator
 from common.log import log_init
+from locator import locator, locator_test
+from render import render
 
 
 def create_app():
@@ -11,7 +16,10 @@ def create_app():
     # 创建 Flask 应用实例
     the_app = Flask(__name__)
     # 注册蓝图
-
+    the_app.register_blueprint(evaluator.bp)  # 批改
+    the_app.register_blueprint(locator.bp)  # 定位
+    the_app.register_blueprint(locator_test.bp)  # 定位测试
+    the_app.register_blueprint(render.bp)  # 渲染
     # 初始化日志配置
     log_init()
     # 初始化跨域策略配置

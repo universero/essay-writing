@@ -2,16 +2,22 @@
 render 渲染类, 负责批改后图片渲染
 核心工作包括作文纸生成, 批注痕迹绘制, A4大小切割
 """
+import base64
 import json
 import os
+from io import BytesIO
 from itertools import groupby
 
 from PIL import Image, ImageFont, ImageDraw
+from contourpy.util.renderer import Renderer
+from flask import Blueprint, request
 
-from common import util
+from common import util, rex
 from common.consts import ZH_NO
 from evaluator.micro_builder import MicroEvaluationBuilder
 from evaluator.micro_evalu import MicroEvaluation
+
+bp = Blueprint("render", __name__)
 
 # 比例系数, 用于提高画质, 画质越高耗时越长
 coefficient = 5
@@ -104,16 +110,17 @@ ALL_DASHED_LINE_LEN = 6 * coefficient
 ALL_DASHED_GAP = 3 * coefficient
 
 # 字体配置
-EVAL_FONT = ImageFont.truetype(os.path.abspath('resource/瑞美加张清平硬笔行书.ttf'), size=17 * coefficient)
-TEXT_FONT = ImageFont.truetype(os.path.abspath('resource/ToneOZ-Tsuipita-TC（仅汉字）.ttf'), size=GRID_TEXT_SIZE)
-NO_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=NO_TEXT_SIZE)
-MID_BAR_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=MID_BAR_TEXT_SIZE)
-SEQ_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=SEQ_TEXT_SIZE)
-SIDE_BAR_ITEM_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=SIDE_BAR_ITEM_SIZE)
-SIDE_BAR_TEXT_FONT = ImageFont.truetype(os.path.abspath('resource/瑞美加张清平硬笔行书.ttf'), size=SIDE_BAR_TEXT_SIZE)
-ALL_TAG_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=ALL_TAG_SIZE)
-ALL_SCORE_FONT = ImageFont.truetype(os.path.abspath('resource/微软雅黑粗体.ttf'), size=ALL_SCORE_SIZE)
-ALL_TEXT_FONT = ImageFont.truetype(os.path.abspath('resource/瑞美加张清平硬笔行书.ttf'), size=ALL_TEXT_SIZE)
+EVAL_FONT = ImageFont.truetype(os.path.abspath('render/resource/瑞美加张清平硬笔行书.ttf'), size=17 * coefficient)
+TEXT_FONT = ImageFont.truetype(os.path.abspath('render/resource/ToneOZ-Tsuipita-TC（仅汉字）.ttf'), size=GRID_TEXT_SIZE)
+NO_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=NO_TEXT_SIZE)
+MID_BAR_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=MID_BAR_TEXT_SIZE)
+SEQ_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=SEQ_TEXT_SIZE)
+SIDE_BAR_ITEM_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=SIDE_BAR_ITEM_SIZE)
+SIDE_BAR_TEXT_FONT = ImageFont.truetype(os.path.abspath('render/resource/瑞美加张清平硬笔行书.ttf'),
+                                        size=SIDE_BAR_TEXT_SIZE)
+ALL_TAG_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=ALL_TAG_SIZE)
+ALL_SCORE_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=ALL_SCORE_SIZE)
+ALL_TEXT_FONT = ImageFont.truetype(os.path.abspath('render/resource/瑞美加张清平硬笔行书.ttf'), size=ALL_TEXT_SIZE)
 
 
 class Render:
@@ -152,6 +159,10 @@ class Render:
         self.rhetoric()
         self.sidebar()
         self.essay_comment()
+        with BytesIO() as buffer:
+            self.img.save(buffer, format="PNG")
+            buffer.seek(0)
+            return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     def deal_title(self):
         """将标题合并到第一段中以简化处理"""
@@ -564,8 +575,19 @@ def sort_sidebar(sidebars: list[SideBar]) -> list[SideBar]:
     return merged_sidebars
 
 
+@bp.post("/render")
+def render():
+    data = request.get_json()
+    title = data["title"]
+    content = data["content"]
+    raw = data["raw"]
+    e = MicroEvaluationBuilder.build({"ch": raw})
+    r = Render(title, content, e)
+    return rex.succeed(r.evalu_visualize())
+
+
 if __name__ == '__main__':
-    with open('../asset/example.json', encoding='utf-8') as f:
+    with open('../asset/evaluator/example.json', encoding='utf-8') as f:
         row_data = json.load(f)
 
     e = MicroEvaluationBuilder.build(row_data)

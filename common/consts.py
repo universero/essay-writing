@@ -1,3 +1,6 @@
+# 是否为测试环境
+MODE = "test"
+
 # BETA 版批改接口
 BETA_URL = "https://api.xhpolaris.com/essay/evaluate"
 MICRO_URL = "http://52.131.210.24/api/score"

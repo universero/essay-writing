@@ -15,6 +15,7 @@ from ultralytics import YOLO
 WEIGHT = './resource/weights/200e4b1440sz-n.pt'  # 模型路径
 INPUT_FOLDER = './resource/dataset/train/images/'  # 输入文件夹路径
 OUTPUT_FOLDER = '../asset/locator/val/'  # 输出文件夹路径
+DEVICE = "cpu"
 
 
 def validate_model(weight_path):
@@ -34,12 +35,12 @@ def process_single_image(model, image_path, output_dir):
         source=image_path,
         conf=0.4,
         iou=0.45,
-        imgsz=800,
+        imgsz=640,
         save=True,
         project=output_dir,
         name="",  # 直接保存在output_dir下
         exist_ok=True,
-        device=0,
+        device=DEVICE,
     )
 
     # 返回检测结果信息

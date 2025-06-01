@@ -184,7 +184,7 @@ class BetaEvaluationBuilder:
 # single-test
 if __name__ == '__main__':
     # 读取原始数据
-    with open('../../asset/example.json', encoding='utf-8') as f:
+    with open('../../asset/evaluator/example.json', encoding='utf-8') as f:
         raw_data = json.load(f)
     # 使用建造者构建对象
     eva = BetaEvaluationBuilder.build(raw_data)

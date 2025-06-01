@@ -4,9 +4,10 @@ evaluation
 类的定义中不附带字段的 build 过程以免代码过长
 字段构造的过程由 EvaluationBuilder 实现
 """
+from common.rex import Response
 
 
-class MicroEvaluation:
+class MicroEvaluation(Response):
     def __init__(self):
         self.comments = self.Comments()  # 段落点评
         self.content = self.Content()  # 内容点评
@@ -21,6 +22,27 @@ class MicroEvaluation:
         self.score_ori = 0  # 原始得分
         self.score_str = ""  # 得分等第
         self.score_str_ori = ""  # 原始得分等第
+
+    def to_dict(self):
+        """序列化为JSON"""
+
+        def convert(obj):
+            if isinstance(obj, (str, int, float, bool)):
+                return obj
+            if obj is None:
+                return None
+            if isinstance(obj, list):
+                return [convert(item) for item in obj]
+            if hasattr(obj, '__dict__'):
+                return {
+                    key: convert(value)
+                    for key, value in obj.__dict__.items()
+                    if not key.startswith('_')
+                }
+            return str(obj)
+
+        ch_data = convert(self)
+        return ch_data
 
     class Comments:
         """段落点评"""
