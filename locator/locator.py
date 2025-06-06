@@ -3,13 +3,16 @@ locator 用于作文主体部分和标题的定位
 基于 YOLO 11, 负责作文主体部分的定位与裁切
 """
 import base64
+import io
+import logging
 import os
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Tuple, List
 
 import cv2
 import numpy as np
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from ultralytics import YOLO
 
 from common import rex
@@ -18,7 +21,7 @@ from common.rex import Response
 bp = Blueprint('locator', __name__)
 
 MODEL = 'locator/resource/weights/200e4b1440sz-n.pt'
-DEVICE = 'cpu'
+DEVICE = 0
 IMGSZ = 800
 
 instance = None
@@ -42,7 +45,7 @@ class Locator:
         # 参数验证
         if not isinstance(image, np.ndarray) or image.ndim != 3:
             raise ValueError("输入必须是3通道的numpy数组(BGR格式)")
-
+        start = datetime.now()
         # 执行预测
         results = self.model.predict(
             source=image,
@@ -51,7 +54,8 @@ class Locator:
             imgsz=IMGSZ,
             verbose=False  # 关闭冗余输出
         )
-
+        end = datetime.now()
+        logging.info(f"识别时间为{(end - start)}s")
         # 解析结果
         detections = []
         for result in results:
@@ -133,18 +137,24 @@ def crop(imgs: List[np.ndarray], no, boxs: dict[str, 'Box|None']):
 @bp.post("/locate")
 def locate():
     global instance
-    if instance is None:
-        instance = Locator(MODEL, DEVICE)
-    ori_imgs = request.files.getlist("images")
-    # 将前端传入的图片转换成np_array
-    np_imgs: List[np.ndarray] = []
-    for img in ori_imgs:
-        img_data = np.frombuffer(img.read(), np.uint8)
-        np_img = cv2.imdecode(img_data, cv2.IMREAD_COLOR)
-        if np_img is not None:
-            np_imgs.append(np_img)
-    # 获取每一个图片的分割定位
-    boxs = []
-    for i in range(len(np_imgs)):
-        boxs.extend(crop(np_imgs, i, instance.locate(np_imgs[i])))
-    return rex.succeed(boxs)
+    try:
+        if instance is None:
+            instance = Locator(MODEL, DEVICE)
+        ori_imgs = request.files.getlist("images")
+        # 将前端传入的图片转换成np_array
+        np_imgs: List[np.ndarray] = []
+        for img in ori_imgs:
+            # 使用内存文件流避免临时文件
+            img_stream = io.BytesIO(img.read())
+            img_stream.seek(0)  # 重置指针
+            np_img = cv2.imdecode(np.frombuffer(img_stream.getbuffer(), np.uint8), cv2.IMREAD_COLOR)
+            if np_img is not None:
+                np_imgs.append(np_img)
+            img_stream.close()  # 显式关闭
+        # 获取每一个图片的分割定位
+        boxs = []
+        for i in range(len(np_imgs)):
+            boxs.extend(crop(np_imgs, i, instance.locate(np_imgs[i])))
+        return rex.succeed(boxs)
+    except Exception as e:
+        abort(500, f"Error processing request: {str(e)}")

@@ -1,53 +1,80 @@
-from flask import request, Blueprint
 import base64
+
 import cv2
 import numpy as np
-
+from flask import request, Blueprint
 
 from common import rex
 from processor.enhance.enhance import enhance_image
 
-# 如果你还要加图像恢复（可选）:
+# 可选：图像恢复模块
 # from processor.restore.restore_spatial import restore_spatial
-# 或者使用频域方法：
-# from processor.restore.restore_freq import restore_freq
 
 bp = Blueprint("processor", __name__)
 
 
-def read_image_from_file(file_storage):
-    """将前端上传的 FileStorage 文件转为 OpenCV 图像"""
-    file_bytes = file_storage.read()
-    np_arr = np.frombuffer(file_bytes, np.uint8)
-    image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    return image
+def decode_base64_to_image(base64_str: str) -> np.ndarray:
+    """
+    将 base64 字符串解码为 OpenCV 图像（numpy 数组）
+    :param base64_str: 前端传入的 base64 字符串（可带或不带 data:image/... 前缀）
+    :return: OpenCV 图像（BGR 格式）
+    """
+    # 移除可能的头部（如 "data:image/jpeg;base64,"）
+    if "base64," in base64_str:
+        base64_str = base64_str.split("base64,")[1]
+
+    # 解码为字节流
+    img_bytes = base64.b64decode(base64_str)
+    np_arr = np.frombuffer(img_bytes, np.uint8)
+
+    # 用 OpenCV 解码图像
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise ValueError("无效的图片数据")
+    return img
 
 
-def encode_image_to_base64(image):
-    """将 OpenCV 图像编码为 base64 字符串"""
-    _, buffer = cv2.imencode('.jpg', image)
-    base64_str = base64.b64encode(buffer).decode('utf-8')
-    return base64_str
+def encode_image_to_base64(image: np.ndarray) -> str:
+    """
+    将 OpenCV 图像编码为 base64 字符串
+    :param image: OpenCV 图像（BGR 格式）
+    :return: base64 字符串（不带 data:image/... 前缀）
+    """
+    _, buffer = cv2.imencode('.jpg', image)  # 或 '.png'
+    return base64.b64encode(buffer).decode('utf-8')
 
 
 @bp.post("/process")
 def process():
-    imgs = request.files.getlist("images")
-    result = []
+    try:
+        # 1. 从请求体中获取 JSON 数据
+        data = request.get_json()
+        if not data or "images" not in data:
+            return rex.fail(400, "请求必须包含 'images' 字段（base64 编码的图片数组）")
 
-    for file_storage in imgs:
-        # Step 1: 读取原始图像
-        image = read_image_from_file(file_storage)
+        base64_images = data["images"]
+        if not isinstance(base64_images, list):
+            return rex.fail(400, "'images' 必须是数组")
 
-        # Step 2: 图像增强
-        enhanced = enhance_image(image)
+        result = []
+        for base64_str in base64_images:
+            # 2. 解码为 OpenCV 图像
+            try:
+                image = decode_base64_to_image(base64_str)
+            except Exception as e:
+                return rex.fail(400, f"Base64 解码失败: {str(e)}")
 
-        # Step 3（可选）: 图像恢复（例如空间域复原模糊图像）
-        # restored = restore_spatial(enhanced)
+            # 3. 图像增强
+            enhanced = enhance_image(image)
 
-        # Step 4: 编码为 base64
-        encoded = encode_image_to_base64(enhanced)  # or encode_image_to_base64(restored)
+            # 4. （可选）图像恢复
+            # restored = restore_spatial(enhanced)
 
-        result.append(encoded)
+            # 5. 重新编码为 base64
+            encoded = encode_image_to_base64(enhanced)  # 或 restored
+            result.append(encoded)
 
-    return rex.succeed(result)
+        return rex.succeed(result)
+
+    except Exception as e:
+        return rex.fail(500, f"处理失败: {str(e)}")

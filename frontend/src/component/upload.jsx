@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, {useState, useCallback} from 'react';
 
 const FileUpload = ({
                         uploadUrl,
@@ -53,7 +53,7 @@ const FileUpload = ({
 
             // 将所有文件添加到formData的image字段中
             files.forEach(file => {
-                formData.append('image', file); // 使用相同的字段名
+                formData.append('images', file); // 使用相同的字段名
             });
 
             const xhr = new XMLHttpRequest();
@@ -70,7 +70,7 @@ const FileUpload = ({
                     setUploadProgress(100);
                     try {
                         const response = JSON.parse(xhr.responseText);
-                        if (onSuccess) onSuccess(files, response.images); // TODO, 根据返回修改格式假设服务器返回 {images: [base64, ...]}
+                        if (onSuccess) onSuccess(files, response.payload);
                     } catch (error) {
                         console.error('上传失败:', error);
                         if (onSuccess) onSuccess(files, []); // 如果解析失败，传递空数组
@@ -202,7 +202,7 @@ const FileUpload = ({
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                                 <div
                                     className="bg-green-500 h-2.5 rounded-full"
-                                    style={{ width: `${uploadProgress}%` }}
+                                    style={{width: `${uploadProgress}%`}}
                                 ></div>
                             </div>
                             <p className="text-sm text-gray-500 mt-1">

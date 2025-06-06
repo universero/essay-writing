@@ -1,17 +1,16 @@
 import json
 import logging
-import os.path
 
+import requests
 from flask import blueprints, request
 
 from common import consts, rex
-import requests
-
 from common.consts import MODE
-from common.error_code import ErrorCode
 from common.error import BizException as Be
-from evaluator.micro_evalu import MicroEvaluation
+from common.error_code import ErrorCode
 from evaluator.micro_builder import MicroEvaluationBuilder
+from evaluator.micro_evalu import MicroEvaluation
+from render.render import Render
 
 bp = blueprints.Blueprint('evaluator', __name__)
 
@@ -59,6 +58,19 @@ def evaluate():
             result = Evaluator.evaluate(title, content)
 
         return rex.succeed(result)
+    except Exception as e:
+        logging.error(f"批改失败, 原因:{e}")
+        return rex.fail(e, 999, "批改失败")
+
+
+@bp.post("/evaluate/render")
+def evaluate_render():
+    try:
+        title = request.json.get("title")
+        content = request.json.get("content")
+        result = Evaluator.evaluate(title, content)
+        r = Render(title, content, result)
+        return rex.succeed(r.evalu_visualize())
     except Exception as e:
         logging.error(f"批改失败, 原因:{e}")
         return rex.fail(e, 999, "批改失败")
