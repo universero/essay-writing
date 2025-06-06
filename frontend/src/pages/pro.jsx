@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import FileUpload from "/src/component/upload.jsx";
 import ImageDisplay from "/src/component/display.jsx";
-import TextDisplay from "/src/component/TextDisplay.jsx"; // 新建的文本显示组件
+import TextDisplay from "/src/component/text.jsx"; // 新建的文本显示组件
 
 export default function ProPage() {
     // 状态管理
@@ -114,18 +114,18 @@ export default function ProPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
-            <h2 className="text-2xl font-bold mb-6">正式模式</h2>
+        <div className="min-h-screen flex flex-col items-center bg-white p-4 pt-8"> {/* 增加 pt-8 让顶部有更多空间 */}
+            <h2 className="text-2xl font-bold mb-4">正式模式</h2> {/* 减少 mb-6 到 mb-4 */}
 
-            {/* 步骤指示器 */}
-            <div className="flex mb-8 w-full max-w-2xl justify-center">
+            {/* 步骤指示器 - 向上移动 */}
+            <div className="flex mb-4 w-full max-w-2xl justify-center"> {/* 减少 mb-8 到 mb-4 */}
                 {['upload', 'locate', 'process', 'ocr', 'result'].map((step, index) => (
                     <React.Fragment key={step}>
                         <div
                             className={`flex flex-col items-center ${currentStep === step ? 'text-blue-500' : 'text-gray-400'}`}
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center 
-                                ${currentStep === step ? 'bg-blue-500 text-white' :
+                            ${currentStep === step ? 'bg-blue-500 text-white' :
                                 index < ['upload', 'locate', 'process', 'ocr', 'result'].indexOf(currentStep) ?
                                     'bg-green-500 text-white' : 'bg-gray-200'}`}>
                                 {index + 1}
@@ -133,16 +133,16 @@ export default function ProPage() {
                             <div className="mt-2 text-sm capitalize">{step}</div>
                         </div>
                         {index < 4 && (
-                            <div className="flex items-center px-2">
-                                <div className="w-8 h-0.5 bg-gray-300"></div>
+                            <div className="flex items-start justify-center px-2">
+                                <div className="w-8 h-0.5 bg-gray-300 mt-4"></div>
                             </div>
                         )}
                     </React.Fragment>
                 ))}
             </div>
 
-            {/* 内容区域 */}
-            <div className="w-full max-w-4xl">
+            {/* 内容区域 - 调整上边距 */}
+            <div className="w-full max-w-4xl mt-2"> {/* 减少默认间距 */}
                 {currentStep === 'upload' && (
                     <>
                         <FileUpload
@@ -155,9 +155,9 @@ export default function ProPage() {
                             className="w-full max-w-md"
                         />
                         {uploadedFiles.length > 0 && (
-                            <div className="mt-6 w-full max-w-md">
-                                <h3 className="text-lg font-medium mb-3">已上传文件 ({uploadedFiles.length})</h3>
-                                <div className="bg-gray-50 rounded-lg p-4">
+                            <div className="mt-4 w-full max-w-md"> {/* 减少 mt-6 到 mt-4 */}
+                                <h3 className="text-lg font-medium mb-2">已上传文件 ({uploadedFiles.length})</h3>
+                                <div className="bg-gray-50 rounded-lg p-3"> {/* 减少 p-4 到 p-3 */}
                                     <ul className="space-y-2">
                                         {uploadedFiles.map((file, index) => (
                                             <li
@@ -165,12 +165,12 @@ export default function ProPage() {
                                                 className="flex items-center justify-between p-2 hover:bg-gray-100 rounded transition-colors"
                                             >
                                                 <div className="flex items-center min-w-0">
-                                                    <svg className="w-5 h-5 text-gray-400 mr-2" /* ... */ ></svg>
+                                                    <svg className="w-5 h-5 text-gray-400 mr-2"></svg>
                                                     <span className="truncate flex-1">{file.name}</span>
                                                 </div>
                                                 <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                                                    {(file.size / (1024 * 1024)).toFixed(2)} MB
-                                                </span>
+                                                {(file.size / (1024 * 1024)).toFixed(2)} MB
+                                            </span>
                                             </li>
                                         ))}
                                     </ul>
@@ -180,22 +180,17 @@ export default function ProPage() {
                     </>
                 )}
 
-                {currentStep === 'locate' && (
-                    <div>
+                {/* 图片显示区域 - 增加高度 */}
+                {['locate', 'process', 'result'].includes(currentStep) && (
+                    <div className="h-[calc(100vh-280px)] min-h-[400px]"> {/* 设置固定高度 */}
                         <ImageDisplay
-                            images={locateResults}
-                            title="定位结果"
-                            description="这是系统识别出的定位结果图片"
-                        />
-                    </div>
-                )}
-
-                {currentStep === 'process' && (
-                    <div>
-                        <ImageDisplay
-                            images={processResults}
-                            title="处理结果"
-                            description="这是经过处理后的图片结果"
+                            images={currentStep === 'locate' ? locateResults :
+                                currentStep === 'process' ? processResults : finalResults}
+                            title={currentStep === 'locate' ? "定位结果" :
+                                currentStep === 'process' ? "处理结果" : "最终结果"}
+                            description={currentStep === 'locate' ? "这是系统识别出的定位结果图片" :
+                                currentStep === 'process' ? "这是经过处理后的图片结果" : "这是系统生成的最终结果图片"}
+                            className="h-full" // 让图片容器填满父容器
                         />
                     </div>
                 )}
@@ -206,18 +201,10 @@ export default function ProPage() {
                         content={ocrResults.content}
                     />
                 )}
-
-                {currentStep === 'result' && (
-                    <ImageDisplay
-                        images={finalResults}
-                        title="最终结果"
-                        description="这是系统生成的最终结果图片"
-                    />
-                )}
             </div>
 
-            {/* 导航按钮 */}
-            <div className="mt-8 flex space-x-4">
+            {/* 导航按钮 - 向上移动 */}
+            <div className="mt-6 flex space-x-4"> {/* 减少 mt-8 到 mt-6 */}
                 {currentStep !== 'upload' && (
                     <button
                         onClick={handlePrevStep}

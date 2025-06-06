@@ -1,12 +1,12 @@
-from flask import request
-from flask.sansio.blueprints import Blueprint
+from flask import request, Blueprint
 import base64
 import cv2
 import numpy as np
-from io import BytesIO
+
 
 from common import rex
 from processor.enhance.enhance import enhance_image
+
 # 如果你还要加图像恢复（可选）:
 # from processor.restore.restore_spatial import restore_spatial
 # 或者使用频域方法：
@@ -51,4 +51,3 @@ def process():
         result.append(encoded)
 
     return rex.succeed(result)
-

@@ -1,8 +1,8 @@
 import cv2
-from remove_colored import remove_colored_marks
-from contrast import enhance_contrast
-from smoothing import smooth_image
-from binarize import binarize_image
+from processor.enhance.remove_colored import remove_colored_marks
+from processor.enhance.contrast import enhance_contrast
+from processor.enhance.smoothing import smooth_image
+from processor.enhance.binarize import binarize_image
 
 
 def enhance_image(image):

@@ -2,15 +2,17 @@
 locator 用于作文主体部分和标题的定位
 基于 YOLO 11, 负责作文主体部分的定位与裁切
 """
+import base64
 import os
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, List
 
 import cv2
 import numpy as np
 from flask import Blueprint, request
 from ultralytics import YOLO
 
+from common import rex
 from common.rex import Response
 
 bp = Blueprint('locator', __name__)
@@ -112,14 +114,37 @@ class Box(Response):
         }
 
 
+# 对前端传入的图片列表进行切割, 返回base64和图片类型
+def crop(imgs: List[np.ndarray], no, boxs: dict[str, 'Box|None']):
+    img = imgs[no]
+    result = []
+    # 切割图片
+    for box in boxs.values():
+        if box is not None:
+            cropped = img[int(box.y1):int(box.y2), int(box.x1):int(box.x2)]
+            _, buffer = cv2.imencode('.jpg', cropped)
+            img_base64 = base64.b64encode(buffer).decode('utf-8')
+            result.append(
+                {"image": img_base64,
+                 "class": box.c})
+    return result
+
+
 @bp.post("/locate")
 def locate():
     global instance
     if instance is None:
         instance = Locator(MODEL, DEVICE)
-    imgs = list(cv2.imdecode(np.frombuffer(file.read(), np.uint8), cv2.IMREAD_COLOR) for file in
-                request.files.getlist("images"))
+    ori_imgs = request.files.getlist("images")
+    # 将前端传入的图片转换成np_array
+    np_imgs: List[np.ndarray] = []
+    for img in ori_imgs:
+        img_data = np.frombuffer(img.read(), np.uint8)
+        np_img = cv2.imdecode(img_data, cv2.IMREAD_COLOR)
+        if np_img is not None:
+            np_imgs.append(np_img)
+    # 获取每一个图片的分割定位
     boxs = []
-    for img in imgs:
-        boxs.append(instance.locate(img))
-    return boxs
+    for i in range(len(np_imgs)):
+        boxs.extend(crop(np_imgs, i, instance.locate(np_imgs[i])))
+    return rex.succeed(boxs)
