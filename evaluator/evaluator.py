@@ -6,7 +6,6 @@ import requests
 from flask import blueprints, request
 
 from common import consts, rex
-from common.consts import MODE
 from common.error import BizException as Be
 from common.error_code import ErrorCode
 from evaluator.micro_builder import MicroEvaluationBuilder
@@ -49,14 +48,9 @@ class Evaluator:
 @bp.post("/evaluate")
 def evaluate():
     try:
-        if MODE == "test":
-            with open('asset/evaluator/example.json', encoding='utf-8') as f:
-                raw_data = json.load(f)
-            result = MicroEvaluationBuilder.build(raw_data)
-        else:
-            title = request.json.get("title")
-            content = request.json.get("content")
-            result = Evaluator.evaluate(title, content)
+        title = request.json.get("title")
+        content = request.json.get("content")
+        result = Evaluator.evaluate(title, content)
 
         return rex.succeed(result)
     except Exception as e:

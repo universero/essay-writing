@@ -86,3 +86,61 @@ def draw_multi_row_text(draw, text, per_row, left, upper, text_size, text_gap, f
                   row_text, font=font, fill="black", anchor="la")
 
     return rows
+
+
+# 计算行数
+def count_multi_row(text, per_row):
+    return (len(text) - 1) // per_row + 1
+
+
+# 英文标点到中文标点的映射字典
+punctuation_map = {
+    ',': '，',
+    '.': '。',
+    ':': '：',
+    ';': '；',
+    '!': '！',
+    '?': '？',
+    '(': '（',
+    ')': '）',
+    '[': '【',
+    ']': '】',
+    '<': '《',
+    '>': '》',
+    '"': '“',
+    "'": '‘',
+    '`': '·'
+}
+
+# 中文标点集合（包括映射后的和原有的）
+chinese_punctuation = set(punctuation_map.values()) | {
+    '，', '。', '：', '；', '！', '？', '（', '）', '【', '】', '《', '》', '“', '‘', '·'
+}
+
+
+def convert_punctuation_to_chinese(text):
+    result = []
+    i = 0
+    n = len(text)
+
+    while i < n:
+        char = text[i]
+        # 检查当前字符是否是英文标点
+        if char in punctuation_map:
+            # 替换为中文标点
+            result.append(punctuation_map[char])
+            # 检查下一个字符是否是空格，如果是则跳过
+            if i + 1 < n and text[i + 1] == ' ':
+                i += 1
+        else:
+            # 检查当前字符是否是中文标点
+            if char in chinese_punctuation:
+                result.append(char)
+                # 检查下一个字符是否是空格，如果是则跳过
+                if i + 1 < n and text[i + 1] == ' ':
+                    i += 1
+            else:
+                result.append(char)
+        i += 1
+
+    return ''.join(result)
