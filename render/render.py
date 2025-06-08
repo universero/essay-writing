@@ -146,8 +146,8 @@ class Render:
 
     def evalu_visualize(self):
         """可视化批改结果"""
-        self.deal_title()
-        self.divide_paras()
+        self.deal_title()  # 处理标题
+        self.divide_paras()  # 划分段落
         self.paras_base()
         self.paras_number()
         self.paras_comments()
@@ -182,14 +182,18 @@ class Render:
             if rows != 0:
                 text_start = self.paras[i - 1].bar_end + MID_BAR_MARGIN_TOP
             text_end = text_start + row * (GRID_HEIGHT + GAP_BAR_HEIGHT)
+            bar_content = util.html_strip(self.evalu.comments.paragraph_comments[i])
+            bar_rows = util.count_multi_row(bar_content, MID_BAR_PER_ROW)
             bar_start = text_end + MID_BAR_MARGIN_TOP
             bar_end = bar_start + MID_BAR_HEIGHT
-            self.paras.append(Para(paras[i], row, text_start, text_end, bar_start, bar_end))
+            if bar_rows > 2:  # 当段评超过两行时应该扩充长度
+                bar_end += (MID_BAR_TEXT_GAP + MID_BAR_TEXT_SIZE) * (bar_rows - 2)
+            self.paras.append(Para(paras[i], row, text_start, text_end, bar_rows, bar_content, bar_start, bar_end))
             rows += row
-
+        mid_bar_height_total = len(self.paras) * (MID_BAR_MARGIN_TOP * 2) + sum(
+            map(lambda para: para.bar_end - para.bar_start, self.paras))
         # 根据文章总数构建页面长度
-        page_number = (rows * (GRID_HEIGHT + GAP_BAR_HEIGHT) + len(paras) * (
-                MID_BAR_HEIGHT + MID_BAR_MARGIN_TOP * 2)) // PAGE_HEIGHT + 2
+        page_number = (rows * (GRID_HEIGHT + GAP_BAR_HEIGHT) + mid_bar_height_total) // PAGE_HEIGHT + 2
         self.img = Image.new("RGBA", (PAGE_WIDTH, PAGE_HEIGHT * page_number), "white")
 
     def paras_base(self):
@@ -240,7 +244,7 @@ class Render:
         draw.line([(MARGIN_LEFT + GAP_BAR_WIDTH + GRID_LINE // 2, para.text_start),
                    (MARGIN_LEFT + GAP_BAR_WIDTH + GRID_LINE // 2, para.text_end)],
                   fill="black", width=GAP_LINE)
-        # 段落点评位置
+        # 段落点评位置 TODO 这里只有两行，不是很对
         draw.rounded_rectangle([(MARGIN_LEFT, para.bar_start),
                                 (MARGIN_LEFT + MID_BAR_WIDTH, para.bar_end)],
                                radius=40,
@@ -336,7 +340,8 @@ class Render:
             now_row = start_row
             while now_row <= end_row:
                 left, right, row = self.get_line_pos(para_no, now_row, start_row, start_col, end_row, end_col)
-                util.draw_wavy_line(draw, (left, row), (right, row), HIGHLIGHT_AMPLITUDE, HIGHLIGHT_WAVELENGTH,
+                _right = right if now_row < end_row else right-5*coefficient
+                util.draw_wavy_line(draw, (left, row), (_right, row), HIGHLIGHT_AMPLITUDE, HIGHLIGHT_WAVELENGTH,
                                     HIGHLIGHT_LINE_COLOR, HIGHLIGHT_LINE)
                 now_row += 1
 
@@ -509,12 +514,14 @@ class Render:
 
 
 class Para:
-    def __init__(self, text, rows, text_start, text_end, bar_start, bar_end):
+    def __init__(self, text, rows, text_start, text_end, bar_rows, bar_content, bar_start, bar_end):
         """
         :param text: 本段内容
         :param rows: 本段行数
         :param text_start: 本段段落内容开始行像素
         :param text_end: 本段段落内容结束行像素
+        :param bar_rows: 本段段评行数
+        :param bar_content: 本段段评内容
         :param bar_start: 本段段评开始行像素
         :param bar_end: 本段段评结束行像素
         """
@@ -522,6 +529,8 @@ class Para:
         self.rows = rows
         self.text_start = text_start
         self.text_end = text_end
+        self.bar_rows = bar_rows
+        self.bar_content = bar_content
         self.bar_start = bar_start
         self.bar_end = bar_end
 
@@ -592,12 +601,12 @@ if __name__ == '__main__':
         row_data = json.load(f)
 
     e = MicroEvaluationBuilder.build(row_data)
-    r = Render("一场有趣的投篮游戏",
-               "今天的阳光明媚，小鸟在树间欢快地歌唱，校园里一片生机勃勃。午休时，我们班的同学们聚集在操场上，准备进行一场有趣的投篮游戏。\n我们首先分成了两队，一队是蓝队，另一队是红队。蓝队的队员有我、小明和小华，红队则由小丽、小杰和小雨组成。比赛规则很简单，每人轮流投篮，看哪队投进去的篮球最多，最后得分高的队伍获胜。游戏开始前，我们都迫不及待想要展示自己的投篮技术。\n我第一个上场，心里有些紧张，但我告诉自己要放轻松。当我拿起篮球站在三分线外时，心里默念着：\"一定要投进去！\"我深吸一口气，认真地瞄准篮筐，轻轻一抛，篮球在空中划出一个优美的弧线，终于\"咚\"地一声进了篮筐！我兴奋地挥舞起双手，队友们也为我欢呼鼓掌。\n接下来的轮到小明和小华，他们也都非常出色，轮番投中多个球，使蓝队的分数不断攀升。红队的小丽投篮技术也很不错，虽然一开始有些失误，但她很快调整状态，接连投中几球，为红队追赶分数。\n随着比赛的进行，大家的气氛越来越热烈，操场上充满了欢声笑语。有的同学为自己的队友加油打气，有的则在一旁跃跃欲试。突然，小杰的投篮时机把握得非常好，他一连投中了三球，红队的分数迅速上涨，让我们感受到了一些压力。\n比赛进入了尾声，我和队友们迅速商量战术，决定增加配合，尽量打好每一次投篮。最后的几轮，我和小明默契地传球，终于又得到了几分。经过激烈的角逐，最后的比分是蓝队35分，红队30分，蓝队获得了胜利。\n虽然红队输掉了比赛，但大家都十分开心。我们一起庆祝，享受着这个愉快的时刻。在游戏结束后，我们互相祝贺，也约定下次再来挑战。今天的投篮游戏不仅锻炼了我们的身体，更让我们体会到了友谊和团队协作的重要性。\n这场投篮游戏让我留下了深刻的印象，我希望以后还能有更多这样的活动，让我们的校园生活更加丰富多彩！",
+    r = Render("鸟巢度假村",
+               "中国有许多著名的景点。其中最有特色的要数海南的鸟巢度假村啦！\n金鸟巢度假村座落在海南三亚亚龙湾附近一座山上的森林公园里，这里依山伴海。丛林密布，一栋栋木质的别墅若隐若现地隐藏在热带雨林中。远远望木去，它们真的像一个个可爱的鸟巢呢！\n走进鸟巢后一股清新的空气扑鼻而来。你会想到自己此时也化作一只心鸟，住在森林之中。眼前的景色也会深深地吸引住你。对面的山头云雾缭绕，远处亚龙湾的海面显得异常平静。蓝绿色的海水与天空连成一片。让你仿佛真的身处于一个如梦如幻的人间天堂。\n傍晚时分，天空中呈现出的绚丽奇特景象又会深深地打动你。只见太阳慢慢落山，它把最后一缕余光投向天空。天空被云彩染红了。似乎是着了火。它们变幻莫测，这一朵像一只咆哮的猛虎，随准备向猎物攻击；那一朵上演着故事中的龟兔赛跑的场景。乌龟率先到达了终点。兔子却落在了后面。火烧云装扮着天空，为天空增添了无限艳丽的色彩。夜幕渐渐降临了。天上的星星点起了灯，它们微笑着对大地眨着眼睛。像荷叶上的露珠，也像无暇的钻石。星星们点缀着无边无际的天空，为天空增添了许多生趣。\n山上的夜晚十分宁静。也非常有趣，耳边经常萦绕着快乐的虫鸣声。只要有灯光的地方，各种各样的虫子就飞涌而来。有大大小小的飞蛾，有讨厌的蚊子，还有各种各样的甲虫。它们围着灯火翩翩起舞像是举办一场盛大的狂欢会。\n鸟巢度假村真是一个独一无二充满生趣，美不胜收的度假胜地啊!你是不是也已经陶醉了呢？",
                e)
     r.evalu_visualize()
     # r.img.show()
     r.img.save("../asset/render.png")
-    r.paging()
-    for i in range(len(r.imgs)):
-        r.imgs[i].save("../asset/render-{}.png".format(i))
+    # r.paging()
+    # for i in range(len(r.imgs)):
+    #     r.imgs[i].save("../asset/render-{}.png".format(i))

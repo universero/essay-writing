@@ -7,12 +7,14 @@ const FileUpload = ({
                         maxSize = 5,
                         accept,
                         multiple = false,
-                        label = '点击或拖拽作文图片到此处上传'
+                        label = '点击或拖拽文件到此处上传'
                     }) => {
     const [files, setFiles] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState(null); // 'preparing', 'uploading', 'processing', 'completed', 'error'
+    const [currentUploadIndex, setCurrentUploadIndex] = useState(0);
 
     const handleFileChange = (e) => {
         const selectedFiles = Array.from(e.target.files);
@@ -46,15 +48,17 @@ const FileUpload = ({
         if (files.length === 0) return;
 
         setIsUploading(true);
+        setUploadStatus('preparing');
         setUploadProgress(0);
+        setCurrentUploadIndex(0);
 
         try {
             const formData = new FormData();
-
-            // 将所有文件添加到formData的image字段中
             files.forEach(file => {
-                formData.append('images', file); // 使用相同的字段名
+                formData.append('images', file);
             });
+
+            setUploadStatus('uploading');
 
             const xhr = new XMLHttpRequest();
 
@@ -62,25 +66,37 @@ const FileUpload = ({
                 if (event.lengthComputable) {
                     const progress = Math.round((event.loaded / event.total) * 100);
                     setUploadProgress(progress);
+                    // Update current file progress
+                    const updatedFiles = [...files];
+                    updatedFiles[currentUploadIndex] = {
+                        ...updatedFiles[currentUploadIndex],
+                        progress: progress
+                    };
+                    setFiles(updatedFiles);
                 }
             });
 
             xhr.addEventListener('load', () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
+                    setUploadStatus('processing');
                     setUploadProgress(100);
                     try {
                         const response = JSON.parse(xhr.responseText);
+                        setUploadStatus('completed');
                         if (onSuccess) onSuccess(files, response.payload);
                     } catch (error) {
                         console.error('上传失败:', error);
-                        if (onSuccess) onSuccess(files, []); // 如果解析失败，传递空数组
+                        setUploadStatus('error');
+                        if (onSuccess) onSuccess(files, []);
                     }
                 } else {
+                    setUploadStatus('error');
                     throw new Error(`上传失败: ${xhr.statusText}`);
                 }
             });
 
             xhr.addEventListener('error', () => {
+                setUploadStatus('error');
                 throw new Error('上传过程中发生错误');
             });
 
@@ -89,6 +105,7 @@ const FileUpload = ({
 
         } catch (error) {
             console.error('上传失败:', error);
+            setUploadStatus('error');
             if (onError) onError(error);
         } finally {
             setIsUploading(false);
@@ -125,6 +142,39 @@ const FileUpload = ({
     const clearFiles = () => {
         setFiles([]);
         setUploadProgress(0);
+        setUploadStatus(null);
+    };
+
+    const getStatusText = () => {
+        switch (uploadStatus) {
+            case 'preparing':
+                return '准备上传中...';
+            case 'uploading':
+                return `上传中: ${uploadProgress}%`;
+            case 'processing':
+                return '服务器处理中...';
+            case 'completed':
+                return '上传完成!';
+            case 'error':
+                return '上传出错';
+            default:
+                return '';
+        }
+    };
+
+    const getStatusColor = () => {
+        switch (uploadStatus) {
+            case 'preparing':
+            case 'uploading':
+            case 'processing':
+                return 'bg-blue-500';
+            case 'completed':
+                return 'bg-green-500';
+            case 'error':
+                return 'bg-red-500';
+            default:
+                return 'bg-gray-500';
+        }
     };
 
     return (
@@ -134,7 +184,7 @@ const FileUpload = ({
                     isDragging
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-300 hover:border-gray-400'
-                }`}
+                } ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}
                 onDragEnter={handleDragEnter}
                 onDragLeave={handleDragLeave}
                 onDragOver={handleDragOver}
@@ -147,6 +197,7 @@ const FileUpload = ({
                     onChange={handleFileChange}
                     accept={accept ? accept.join(',') : undefined}
                     multiple={multiple}
+                    disabled={isUploading}
                 />
                 <label
                     htmlFor="file-upload"
@@ -199,15 +250,20 @@ const FileUpload = ({
 
                     {isUploading && (
                         <div className="mb-4">
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm font-medium text-gray-700">
+                                    {getStatusText()}
+                                </span>
+                                <span className="text-sm font-medium text-gray-700">
+                                    {uploadProgress}%
+                                </span>
+                            </div>
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                                 <div
-                                    className="bg-green-500 h-2.5 rounded-full"
+                                    className={`${getStatusColor()} h-2.5 rounded-full transition-all duration-300`}
                                     style={{width: `${uploadProgress}%`}}
                                 ></div>
                             </div>
-                            <p className="text-sm text-gray-500 mt-1">
-                                总上传进度: {uploadProgress}%
-                            </p>
                         </div>
                     )}
 
@@ -225,6 +281,16 @@ const FileUpload = ({
                                         <p className="text-xs text-gray-500">
                                             {(file.size / (1024 * 1024)).toFixed(2)} MB
                                         </p>
+                                        {isUploading && (
+                                            <div className="mt-1">
+                                                <div className="w-full bg-gray-200 rounded-full h-1">
+                                                    <div
+                                                        className="bg-blue-500 h-1 rounded-full"
+                                                        style={{width: `${file.progress || 0}%`}}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <button
                                         type="button"

@@ -1,11 +1,19 @@
 @import "tailwindcss";
 #root {
-  overflow-y: hidden;
+  overflow-y: auto;
   height: 100vh;
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  /* 隐藏滚动条但保持滚动功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE和Edge */
+}
+
+/* Chrome, Safari和Opera */
+#root::-webkit-scrollbar {
+  display: none;
 }
 
 .logo {
