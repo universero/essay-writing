@@ -79,8 +79,7 @@ export default function ProPage() {
         const resp = await Post(BaseURL + '/process', {body: data})
         return resp.map((processedImage, index) => {
             return {
-                // image: processedImage,  // 使用处理后的图像 TODO
-                image: locateResults[index].image,
+                image: processedImage,  // 使用处理后的图像
                 class: locateResults[index].class  // 保留原始分类
             };
         });
@@ -90,6 +89,12 @@ export default function ProPage() {
         let data = {images: processResults};
         return await Post(BaseURL + '/ocr/bee', {body: data})
     };
+
+    // 添加这个处理函数
+    const handleOcrResultsChange = (newResults) => {
+        setOcrResults(newResults);
+    };
+
 
     const fetchFinalResults = async (ocrData) => {
         console.log(ocrData);
@@ -186,6 +191,7 @@ export default function ProPage() {
                         <TextDisplay
                             title={ocrResults.title}
                             content={ocrResults.content}
+                            onResultsChange={handleOcrResultsChange}
                         />
                     )}
                 </div>

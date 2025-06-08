@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 
 import requests
 from flask import blueprints, request
@@ -68,8 +69,16 @@ def evaluate_render():
     try:
         title = request.json.get("title")
         content = request.json.get("content")
+
+        start = datetime.now()
         result = Evaluator.evaluate(title, content)
+        mid = datetime.now()
+        logging.info(f"批改用时{mid - start}")
+        print(f"{title}\n{content}\n{MicroEvaluationBuilder.to_pretty_json(result)}\n")
+
         r = Render(title, content, result)
+        end = datetime.now()
+        logging.info(f"渲染用时{end - mid}")
         return rex.succeed(r.evalu_visualize())
     except Exception as e:
         logging.error(f"批改失败, 原因:{e}")

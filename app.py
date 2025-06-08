@@ -25,7 +25,7 @@ def create_app():
     # 初始化日志配置
     log_init()
     # 初始化跨域策略配置
-    CORS(the_app,supports_credentials=True)
+    CORS(the_app, supports_credentials=True)
 
     return the_app
 

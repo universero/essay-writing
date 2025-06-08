@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import React, {useState} from 'react';
+import {TransformWrapper, TransformComponent} from 'react-zoom-pan-pinch';
 
-const ImageDisplay = ({ images, title, description }) => {
+const ImageDisplay = ({images}) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const goToPrev = () => {
@@ -33,8 +33,8 @@ const ImageDisplay = ({ images, title, description }) => {
                         initialScale={1}
                         minScale={0.5}
                         maxScale={3}
-                        wheel={{ step: 0.1 }}
-                        doubleClick={{ step: 0.5 }}
+                        wheel={{step: 0.1}}
+                        doubleClick={{step: 0.5}}
                         panning={{
                             disabled: false, // 启用拖拽
                             velocityDisabled: false,
@@ -43,7 +43,7 @@ const ImageDisplay = ({ images, title, description }) => {
                         }}
                         limitToBounds={false} // 允许拖出边界
                     >
-                        {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
+                        {({zoomIn, zoomOut, resetTransform, ...rest}) => (
                             <>
                                 {/* 缩放控制按钮 */}
                                 <div className="absolute right-2 top-2 z-10 flex space-x-2">
@@ -52,8 +52,10 @@ const ImageDisplay = ({ images, title, description }) => {
                                         className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
                                         aria-label="放大"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                                             viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                         </svg>
                                     </button>
                                     <button
@@ -61,8 +63,10 @@ const ImageDisplay = ({ images, title, description }) => {
                                         className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
                                         aria-label="缩小"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                                             viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                  d="M20 12H4"/>
                                         </svg>
                                     </button>
                                     <button
@@ -70,8 +74,10 @@ const ImageDisplay = ({ images, title, description }) => {
                                         className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
                                         aria-label="重置"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                                             viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
                                         </svg>
                                     </button>
                                 </div>
@@ -116,8 +122,9 @@ const ImageDisplay = ({ images, title, description }) => {
                             className="absolute left-0 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-10"
                             aria-label="上一张"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
                             </svg>
                         </button>
                         <button
@@ -125,8 +132,9 @@ const ImageDisplay = ({ images, title, description }) => {
                             className="absolute right-0 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-10"
                             aria-label="下一张"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
                             </svg>
                         </button>
                     </>

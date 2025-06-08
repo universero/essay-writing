@@ -9,7 +9,6 @@ from io import BytesIO
 from itertools import groupby
 
 from PIL import Image, ImageFont, ImageDraw
-from contourpy.util.renderer import Renderer
 from flask import Blueprint, request
 
 from common import util, rex
@@ -323,15 +322,17 @@ class Render:
         """修辞部分"""
         draw = ImageDraw.Draw(self.img)
         for rhetoric in self.evalu.highlights.rhetoric:
+            t = rhetoric.type
+            if t == "语言":
+                continue
+            # if len(rhetoric.types) > 0:
+            #     t = "，" if t != "" else ""
+            #     t += "，".join(rhetoric.types)
             # 全文索引转换为段落索引
             para_no, start_row, start_col, end_row, end_col = self.global_to_paragraph(rhetoric.start_pos,
                                                                                        rhetoric.end_pos)
-            t = rhetoric.type
-            if len(rhetoric.types) > 0:
-                t = "，" if t != "" else ""
-                t += "，".join(rhetoric.types)
             self.todo_sidebar.append(
-                SideBar(para_no, start_row, start_col, "好句", t, "", HIGHLIGHT_LINE_COLOR))
+                SideBar(para_no, start_row, start_col, "好句", "，".join(rhetoric.types), "", HIGHLIGHT_LINE_COLOR))
             now_row = start_row
             while now_row <= end_row:
                 left, right, row = self.get_line_pos(para_no, now_row, start_row, start_col, end_row, end_col)
