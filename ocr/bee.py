@@ -4,6 +4,10 @@ import requests
 
 from common.consts import BEE_URL
 
+"""
+bee.py bee版本的OCR接口调用
+"""
+
 payload = {
     "images": [],
     "leftType": "all"

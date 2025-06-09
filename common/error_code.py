@@ -5,7 +5,6 @@ class ErrorCode(Enum):
     """
     ErrorCode 错误码枚举类
     业务过程中遇到并抛出的业务异常，需要在这里定义好错误码和错误信息的枚举项
-    要求: 需要根据异常类别区分开
     """
     # ROI Extract相关
     DEFAULT_ROI_EXTRACT = (1000, "ROI Extract Error")

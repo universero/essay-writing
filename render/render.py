@@ -1,125 +1,24 @@
-"""
-render 渲染类, 负责批改后图片渲染
-核心工作包括作文纸生成, 批注痕迹绘制, A4大小切割
-"""
 import base64
 import json
-import os
 from io import BytesIO
-from itertools import groupby
 
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageDraw
 from flask import Blueprint, request
 
-from common import util, rex
+from common import rex
 from common.consts import ZH_NO
-from evaluator.micro_builder import MicroEvaluationBuilder
-from evaluator.micro_evalu import MicroEvaluation
+from evaluate.micro_builder import MicroEvaluationBuilder
+from evaluate.micro_evalu import MicroEvaluation
+from render.components import Para, SideBar, sort_sidebar
+from render.config import *
+from render.draw_utils import *
+
+"""
+render.py 批改结果渲染及相关flask接口
+核心工作包括作文纸生成, 批注痕迹绘制, A4大小切割
+"""
 
 bp = Blueprint("render", __name__)
-
-# 比例系数, 用于提高画质, 画质越高耗时越长
-coefficient = 5
-
-# 页面
-PAGE_HEIGHT = 993 * coefficient  # 页面高度为993px
-PAGE_WIDTH = 702 * coefficient  # 页面宽度为702px
-
-# 方格
-GRID_HEIGHT = 34 * coefficient  # 每个格子的高度
-GRID_WIDTH = 30 * coefficient  # 每个格子的宽度（px）
-GRID_PER_ROW = 17  # 每行格子数
-MARGIN_TOP = 24 * coefficient  # 上边距
-MARGIN_LEFT = 24 * coefficient  # 左边距
-GRID_TEXT_SIZE = 17 * coefficient
-GRID_LINE = 3
-
-# 两行方格中间
-GAP_BAR_HEIGHT = 7 * coefficient  # 两行中间的间距
-GAP_BAR_WIDTH = 510 * coefficient  # 每行的宽度
-GAP_LINE = 3
-
-# 段评, 多行时需要计算高度, 暂时只有一行
-MID_BAR_HEIGHT = 76 * coefficient
-MID_BAR_WIDTH = 510 * coefficient
-MID_BAR_MARGIN_TOP = 8 * coefficient  # 段评中上下侧的距离
-MID_BAR_MARGIN_LEFT = 0.4 * GRID_WIDTH  # 第一个字距离段评左侧线的距离
-MID_BAR_TEXT_GAP = 8 * coefficient  # 段评中字的间隔
-MID_BAR_TEXT_SIZE = 13 * coefficient  # 段评中字体高度
-MID_BAR_PER_ROW = int((MID_BAR_WIDTH - MID_BAR_MARGIN_LEFT * 2) // (MID_BAR_TEXT_SIZE * 1.3))
-MID_BAR_LINE = 5
-
-# 侧边评价
-SIDE_BAR_WIDTH = 140 * coefficient  # 侧边评价宽度
-SIDE_BAR_MARGIN_LEFT = 3 * coefficient  # 侧边评价与侧边栏左侧的间距
-SIDE_BAR_MARGIN_RIGHT = 11 * coefficient  # 和右侧的区别
-SIDE_BAR_MARGIN_TOP = 24 * coefficient  # 与顶部距离
-SIDE_BAR_TEXT_SIZE = 13 * coefficient  # 侧边评价字高
-SIDE_BAR_TEXT_GAP = 5 * coefficient  # 侧边栏中字间距
-SIDE_BAR_ITEM_GAP = 12 * coefficient  # 侧边栏中两项的间距
-SIDE_BAR_ITEM_SIZE = 12 * coefficient
-SIDE_BAR_PER_ROW = int((SIDE_BAR_WIDTH - SIDE_BAR_MARGIN_LEFT) // (SIDE_BAR_TEXT_SIZE * 1.1))
-SIDE_BAR_LINE = 5
-SIDE_BAR_COLOR = "#F19E3E"
-
-# 段落编号
-NO_MARGIN_LEFT = GRID_WIDTH * 0.2 + MARGIN_LEFT  # 段落编号距离页左侧距离
-NO_MARGIN_TOP = GRID_HEIGHT * 0.2  # 段落编号距离所在方格的上侧距离
-NO_HEIGHT = GRID_HEIGHT * 0.6  # 编号高度
-NO_WIDTH = GRID_WIDTH * 0.8  # 编号宽度
-NO_COLOR = "#F19E3E"
-NO_TEXT_SIZE = 10 * coefficient
-
-# 病句
-SICK_COLOR = "red"
-SICK_LINE = int(1.5 * coefficient)
-
-# 错词错标点
-TYPO_MASK_COLOR = (255, 95, 93, 70)  # 透明红色
-
-# 好词好句
-HIGHLIGHT_MASK_COLOR = (101, 130, 255, 70)  # 透明蓝色
-HIGHLIGHT_AMPLITUDE = 1.1 * coefficient  # 波浪线波幅
-HIGHLIGHT_WAVELENGTH = 15 * coefficient  # 波浪线波长
-HIGHLIGHT_LINE_COLOR = (101, 130, 255)
-HIGHLIGHT_LINE = int(1.5 * coefficient)
-
-# 序号
-SEQ_RADIUS = 5 * coefficient
-SEQ_COLOR = (101, 130, 255)
-SEQ_TEXT_SIZE = 7 * coefficient
-
-# 全文评价
-ALL_MARGIN_TOP = 20 * coefficient
-ALL_MARGIN_LEFT = int(0.6 * GRID_WIDTH)
-ALL_MARGIN_RIGHT = 45 * coefficient
-ALL_WIDTH = 492 * coefficient
-ALL_ITEM_GAP = 20 * coefficient
-ALL_ICON_RADIUS = 5 * coefficient
-ALL_ICON_WIDTH = 3 * coefficient
-ALL_TAG_SIZE = 18 * coefficient
-ALL_SCORE_SIZE = 2 * ALL_TAG_SIZE
-ALL_TEXT_SIZE = 17 * coefficient
-ALL_TEXT_GAP = 8 * coefficient
-ALL_PER_ROW = int(ALL_WIDTH // ALL_TEXT_SIZE)
-ALL_COLOR = "#F19E3E"
-ALL_LINE = 1 * coefficient
-ALL_DASHED_LINE = 1 * coefficient
-ALL_DASHED_LINE_LEN = 6 * coefficient
-ALL_DASHED_GAP = 3 * coefficient
-
-# 字体配置
-EVAL_FONT = ImageFont.truetype(os.path.abspath('render/resource/瑞美加张清平硬笔行书.ttf'), size=17 * coefficient)
-TEXT_FONT = ImageFont.truetype(os.path.abspath('render/resource/ToneOZ-Tsuipita-TC（仅汉字）.ttf'), size=GRID_TEXT_SIZE)
-NO_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=NO_TEXT_SIZE)
-MID_BAR_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=MID_BAR_TEXT_SIZE)
-SEQ_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=SEQ_TEXT_SIZE)
-SIDE_BAR_ITEM_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=SIDE_BAR_ITEM_SIZE)
-SIDE_BAR_TEXT_FONT = ImageFont.truetype(os.path.abspath('render/resource/瑞美加张清平硬笔行书.ttf'),
-                                        size=SIDE_BAR_TEXT_SIZE)
-ALL_TAG_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=ALL_TAG_SIZE)
-ALL_SCORE_FONT = ImageFont.truetype(os.path.abspath('render/resource/微软雅黑粗体.ttf'), size=ALL_SCORE_SIZE)
-ALL_TEXT_FONT = ImageFont.truetype(os.path.abspath('render/resource/瑞美加张清平硬笔行书.ttf'), size=ALL_TEXT_SIZE)
 
 
 class Render:
@@ -141,7 +40,7 @@ class Render:
         self.todo_sidebar = []  # 需要绘制的侧边栏项
         self.img = Image.new("RGBA", (PAGE_WIDTH, PAGE_HEIGHT), "white")
         self.imgs = []  # 分页结果
-        self.comment_end = None
+        self.comment_start = None
         self.comment_end = None
 
     def evalu_visualize(self):
@@ -182,8 +81,8 @@ class Render:
             if rows != 0:
                 text_start = self.paras[i - 1].bar_end + MID_BAR_MARGIN_TOP
             text_end = text_start + row * (GRID_HEIGHT + GAP_BAR_HEIGHT)
-            bar_content = util.html_strip(self.evalu.comments.paragraph_comments[i])
-            bar_rows = util.count_multi_row(bar_content, MID_BAR_PER_ROW)
+            bar_content = html_strip(self.evalu.comments.paragraph_comments[i])
+            bar_rows = count_multi_row(bar_content, MID_BAR_PER_ROW)
             bar_start = text_end + MID_BAR_MARGIN_TOP
             bar_end = bar_start + MID_BAR_HEIGHT
             if bar_rows > 2:  # 当段评超过两行时应该扩充长度
@@ -278,10 +177,10 @@ class Render:
             left = MARGIN_LEFT + MID_BAR_MARGIN_LEFT
             upper = self.paras[i].bar_start + MID_BAR_MARGIN_TOP
             draw.text((left, upper), no, font=MID_BAR_FONT, fill=NO_COLOR, anchor="la")
-            text = util.html_strip(self.evalu.comments.paragraph_comments[i])
+            text = html_strip(self.evalu.comments.paragraph_comments[i])
             # 分行写入段评实际内容
-            rows = util.draw_multi_row_text(draw, text, MID_BAR_PER_ROW, left, upper, MID_BAR_TEXT_SIZE,
-                                            MID_BAR_TEXT_GAP, EVAL_FONT)
+            draw_multi_row_text(draw, text, MID_BAR_PER_ROW, left, upper, MID_BAR_TEXT_SIZE,
+                                MID_BAR_TEXT_GAP, EVAL_FONT)
 
     def sick_sentences(self):
         """绘制病句标识"""
@@ -340,9 +239,9 @@ class Render:
             now_row = start_row
             while now_row <= end_row:
                 left, right, row = self.get_line_pos(para_no, now_row, start_row, start_col, end_row, end_col)
-                _right = right if now_row < end_row else right-5*coefficient
-                util.draw_wavy_line(draw, (left, row), (_right, row), HIGHLIGHT_AMPLITUDE, HIGHLIGHT_WAVELENGTH,
-                                    HIGHLIGHT_LINE_COLOR, HIGHLIGHT_LINE)
+                _right = right if now_row < end_row else right - 5 * coefficient
+                draw_wavy_line(draw, (left, row), (_right, row), HIGHLIGHT_AMPLITUDE, HIGHLIGHT_WAVELENGTH,
+                               HIGHLIGHT_LINE_COLOR, HIGHLIGHT_LINE)
                 now_row += 1
 
     def get_line_pos(self, para_no, now_row, start_row, start_col, end_row, end_col):
@@ -393,8 +292,8 @@ class Render:
                 upper += SIDE_BAR_TEXT_GAP + SIDE_BAR_ITEM_SIZE
                 draw.text((left, upper), sidebar.tag, font=SIDE_BAR_ITEM_FONT, fill=sidebar.color, anchor="la")
             # 分行写入content
-            rows = util.draw_multi_row_text(draw, sidebar.content, SIDE_BAR_PER_ROW, left, upper, SIDE_BAR_TEXT_SIZE,
-                                            SIDE_BAR_TEXT_GAP, SIDE_BAR_TEXT_FONT)
+            rows = draw_multi_row_text(draw, sidebar.content, SIDE_BAR_PER_ROW, left, upper, SIDE_BAR_TEXT_SIZE,
+                                       SIDE_BAR_TEXT_GAP, SIDE_BAR_TEXT_FONT)
             last = upper + (SIDE_BAR_TEXT_SIZE + SIDE_BAR_TEXT_GAP) * rows + SIDE_BAR_ITEM_GAP
 
     def seq(self, number, para_no, row, col, color):
@@ -442,15 +341,15 @@ class Render:
                       font=ALL_SCORE_FONT, fill=ALL_COLOR, anchor="mm")
             upper += ALL_TAG_SIZE
             # 分行写入content
-            text = util.html_strip(content)
-            rows = util.draw_multi_row_text(draw, text, ALL_PER_ROW, left, upper, ALL_TEXT_SIZE, ALL_TEXT_GAP,
-                                            ALL_TEXT_FONT)
+            text = html_strip(content)
+            rows = draw_multi_row_text(draw, text, ALL_PER_ROW, left, upper, ALL_TEXT_SIZE, ALL_TEXT_GAP,
+                                       ALL_TEXT_FONT)
             upper += (ALL_TEXT_SIZE + ALL_TEXT_GAP) * rows + ALL_ITEM_GAP * 3.5
             if i != len(texts) - 1:
-                util.draw_dashed_line(draw, (left, upper - 1.5 * ALL_ITEM_GAP),
-                                      (left + ALL_WIDTH - ALL_MARGIN_RIGHT, upper - 1.5 * ALL_ITEM_GAP),
-                                      ALL_DASHED_LINE_LEN,
-                                      ALL_DASHED_GAP, fill="black", width=ALL_DASHED_LINE)
+                draw_dashed_line(draw, (left, upper - 1.5 * ALL_ITEM_GAP),
+                                 (left + ALL_WIDTH - ALL_MARGIN_RIGHT, upper - 1.5 * ALL_ITEM_GAP),
+                                 ALL_DASHED_LINE_LEN,
+                                 ALL_DASHED_GAP, fill="black", width=ALL_DASHED_LINE)
         draw.rectangle([(MARGIN_LEFT, start), (left + ALL_WIDTH, upper - ALL_ITEM_GAP)], outline="black",
                        width=ALL_LINE)
         self.comment_start, self.comment_end = start, upper - ALL_ITEM_GAP
@@ -511,78 +410,6 @@ class Render:
             page = Image.new("RGBA", (PAGE_WIDTH, PAGE_HEIGHT), "white")
             page.paste(leave, (0, MARGIN_TOP))
             self.imgs.append(page)
-
-
-class Para:
-    def __init__(self, text, rows, text_start, text_end, bar_rows, bar_content, bar_start, bar_end):
-        """
-        :param text: 本段内容
-        :param rows: 本段行数
-        :param text_start: 本段段落内容开始行像素
-        :param text_end: 本段段落内容结束行像素
-        :param bar_rows: 本段段评行数
-        :param bar_content: 本段段评内容
-        :param bar_start: 本段段评开始行像素
-        :param bar_end: 本段段评结束行像素
-        """
-        self.text = text
-        self.rows = rows
-        self.text_start = text_start
-        self.text_end = text_end
-        self.bar_rows = bar_rows
-        self.bar_content = bar_content
-        self.bar_start = bar_start
-        self.bar_end = bar_end
-
-
-class SideBar:
-    def __init__(self, para, row, col, kind, tag, content, color):
-        """
-        :param para: 开始的段落
-        :param row: 开始的行号
-        :param col: 开始的列号
-        :param kind: 类型
-        :param tag: 标签
-        :param content: 文字内容
-        """
-        self.para = para
-        self.row = row
-        self.col = col
-        self.kind = kind
-        self.tag = tag
-        self.content = content
-        self.color = color
-
-
-def sort_sidebar(sidebars: list[SideBar]) -> list[SideBar]:
-    """
-    按 para, row, col 升序排列 SideBar 列表，
-    如果 para, row, col 相同，则合并为一个元素：
-    - kind, tag, content, color 用空格拼接
-    """
-    # 先排序
-    sorted_sidebars = sorted(sidebars, key=lambda sb: (sb.para, sb.row, sb.col))
-    # 合并相同 (para, row, col) 的元素
-    merged_sidebars = []
-    for key, group in groupby(sorted_sidebars, key=lambda sb: (sb.para, sb.row, sb.col)):
-        group_list = list(group)
-        if len(group_list) == 1:
-            merged_sidebars.append(group_list[0])
-        else:
-            # 合并第一个元素，其他属性拼接（去重）
-            first = group_list[0]
-            # 合并 kind，去重
-            merged_kind = "，".join(set(sb.kind for sb in group_list))
-            # 合并 tag，去重
-            merged_tag = "，".join(set(sb.tag for sb in group_list))
-            # 合并 content（不去重）
-            merged_content = " ".join(sb.content for sb in group_list)
-            merged = SideBar(
-                para=first.para, row=first.row, col=first.col,
-                kind=merged_kind, tag=merged_tag, content=merged_content, color=first.color,
-            )
-            merged_sidebars.append(merged)
-    return merged_sidebars
 
 
 @bp.post("/render")

@@ -1,10 +1,10 @@
 from flask import jsonify
 
-from common.error import BizException
+from common.errorx import BizException
 
 """
-response_util 响应工具类
-用于向前端返回 JSON 类型的响应。
+rex 响应工具类
+封装 flask 的 JSON 响应方式, 提供用户友好的错误处理
 """
 
 

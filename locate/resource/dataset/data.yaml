@@ -1,0 +1,6 @@
+path: ../resource/dataset
+train: train/images
+val: val/images
+
+nc: 2
+names: [ 'title','content' ]

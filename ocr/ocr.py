@@ -1,7 +1,11 @@
 from flask import Blueprint, request
 
-from common import util
+from ocr.post import *
 from ocr.bee import bee
+
+"""
+ocr.py 定义ocr相关接口
+"""
 
 bp = Blueprint('orc', __name__)
 
@@ -12,8 +16,8 @@ def ocr():
     images = request.json.get("images")
     titles = [img["image"] for img in images if img["class"] == 0]
     contents = [img["image"] for img in images if img["class"] == 1]
-    title = util.convert_punctuation_to_chinese(bee(titles))
-    content = util.convert_punctuation_to_chinese(bee(contents))
+    title = convert_punctuation_to_chinese(bee(titles))
+    content = convert_punctuation_to_chinese(bee(contents))
     print(title)
     print(content)
     return {"title": title,
