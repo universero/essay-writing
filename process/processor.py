@@ -47,8 +47,7 @@ def process_core(img: 'Mat | ndarray[Any, dtype] | UMat'):
     # 膨胀操作连接笔画
     kernel = np.ones((3, 3), np.uint8)
     reconstructed = cv2.morphologyEx(clean, cv2.MORPH_DILATE, kernel, iterations=1)
-    final_mask = cv2.bitwise_and(reconstructed, binary)
-
+    final_mask = cv2.bitwise_and(reconstructed, clean)
     # 黑白像素反转
     final = cv2.bitwise_not(final_mask)
 
